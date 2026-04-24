@@ -312,7 +312,7 @@ The Graph
 ↓
 Frontend (TMA)
 
-```id="k9dc8m"
+```
 
 ---
 
