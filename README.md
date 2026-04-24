@@ -1,5 +1,5 @@
 # Telegramm-mini-app
-```markdown id="k2r9x1"
+
 # DeFi Super-App (Option A) — 4 Week Plan (Production-Grade, Fully Aligned)
 
 ## Overview
