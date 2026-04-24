@@ -4,7 +4,7 @@
 
 ## Overview
 
-DeFi Super-App — это production-level децентрализованный протокол, полностью соответствующий требованиям курса Blockchain Technologies 2 :contentReference[oaicite:0]{index=0}.
+DeFi Super-App — это production-level децентрализованный протокол, полностью соответствующий требованиям курса Blockchain Technologies 2.
 
 Проект включает:
 - Lending Protocol (core primitive, с нуля)
@@ -236,7 +236,7 @@ DeFi Super-App — это production-level децентрализованный 
 
 ## Testing (STRICT REQUIREMENTS)
 
-Согласно требованиям :contentReference[oaicite:1]{index=1}:
+Согласно требованиям :
 
 - ≥ 50 unit tests  
 - ≥ 10 fuzz tests  
@@ -329,7 +329,7 @@ Frontend (TMA)
 
 ## Deliverables
 
-Согласно требованиям :contentReference[oaicite:2]{index=2}:
+Согласно требованиям :
 
 - Smart contracts
 - Full test suite
