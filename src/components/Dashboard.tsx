@@ -4,6 +4,8 @@ import { useNetworkCheck } from '../hooks/useNetworkCheck'
 import { useReadContract, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { CONTRACT_ADDRESSES, LENDING_POOL_ABI } from '../config/contracts'
 import { formatUnits, parseUnits } from 'viem'
+import { useQuery } from '@tanstack/react-query'
+import { fetchUserDeposits } from '../config/graphql'
 
 export function Dashboard() {
   const { isConnected, isWrongNetwork } = useNetworkCheck()
@@ -26,6 +28,14 @@ export function Dashboard() {
     query: {
       enabled: !!address && !isWrongNetwork,
     }
+  })
+
+  // Хук React Query для получения истории транзакций из The Graph Subgraph
+  const { data: depositHistory } = useQuery({
+    queryKey: ['userDeposits', address],
+    queryFn: () => fetchUserDeposits(address!),
+    enabled: !!address && !isWrongNetwork,
+    refetchInterval: 10000, // Автообновление логов каждые 10 секунд
   })
   
   const supplied = accountData ? parseFloat(formatUnits(accountData[0], 18)).toFixed(2) : "0.00"
@@ -162,6 +172,30 @@ export function Dashboard() {
               </span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Секция истории транзакций из The Graph */}
+      <div className="bg-tgSecondaryBg/80 p-4 rounded-2xl border border-slate-800/40 space-y-3">
+        <h3 className="text-xs font-bold text-tgHint uppercase tracking-wider font-mono">История операций (The Graph Subgraph)</h3>
+        <div className="space-y-2">
+          {depositHistory && depositHistory.length > 0 ? (
+            depositHistory.map((tx) => (
+              <div key={tx.id} className="p-3 bg-slate-900/40 rounded-xl border border-slate-800/20 flex items-center justify-between text-xs font-mono">
+                <div>
+                  <p className="text-emerald-400 font-bold">↓ Deposit</p>
+                  <p className="text-[10px] text-tgHint mt-0.5">
+                    {new Date(parseInt(tx.timestamp) * 1000).toLocaleTimeString()}
+                  </p>
+                </div>
+                <p className="text-tgText font-bold">
+                  {parseFloat(formatUnits(BigInt(tx.amount), 18)).toFixed(2)} <span className="text-[10px] text-tgLink">ETH</span>
+                </p>
+              </div>
+            ))
+          ) : (
+            <p className="text-xs text-tgHint py-2 text-center font-sans">История депозитов пуста или сабграф синхронизируется.</p>
+          )}
         </div>
       </div>
     </div>
