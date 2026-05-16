@@ -152,13 +152,13 @@ DeFi Super-App — это production-level децентрализованный 
 ## Week 1 — Core + Governance + Proxy
 
 **Абзал:**
+- ERC20Votes token
+- Governor + Timelock
+
+**Никита:**
 - LendingPool (UUPS):
   - deposit / borrow / repay / withdraw
 - Health Factor
-
-**Никита:**
-- ERC20Votes token
-- Governor + Timelock
 
 **Арман:**
 - TMA setup
@@ -169,15 +169,15 @@ DeFi Super-App — это production-level децентрализованный 
 ## Week 2 — Security + Oracle + Factory
 
 **Абзал:**
-- liquidation()
-- ReentrancyGuard
-- CEI pattern
-
-**Никита:**
 - Chainlink Oracle:
   - price feed
   - stale check
 - Factory (CREATE + CREATE2)
+
+**Никита:**
+- liquidation()
+- ReentrancyGuard
+- CEI pattern
 
 **Арман:**
 - UI:
@@ -188,6 +188,11 @@ DeFi Super-App — это production-level децентрализованный 
 ## Week 3 — Vault + Testing + Subgraph
 
 **Абзал:**
+- Subgraph:
+  - ≥4 entities
+  - ≥5 queries
+
+**Никита:**
 - ERC-4626 Vault
 - Vault → Lending integration
 
@@ -195,11 +200,6 @@ DeFi Super-App — это production-level децентрализованный 
   - ≥50 unit
   - ≥10 fuzz
   - ≥5 invariant
-
-**Никита:**
-- Subgraph:
-  - ≥4 entities
-  - ≥5 queries
 
 **Арман:**
 - Dashboard:
@@ -212,16 +212,16 @@ DeFi Super-App — это production-level децентрализованный 
 ## Week 4 — Deployment + CI + Demo
 
 **Абзал:**
-- Gas optimization
-- Inline assembly optimization
-
-**Никита:**
 - L2 deploy + verification
 - Gas report (L1 vs L2)
 - CI:
   - forge test
   - coverage
   - slither
+
+**Никита:**
+- Gas optimization
+- Inline assembly optimization
 
 **Арман:**
 - Final UI
