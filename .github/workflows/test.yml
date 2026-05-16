@@ -4,7 +4,7 @@ permissions: {}
 
 on:
   push:
-    branches: [main, smart-contracts]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
