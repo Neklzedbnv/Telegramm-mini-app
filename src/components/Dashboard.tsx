@@ -1,14 +1,34 @@
 import { useState, useEffect } from 'react'
 import { mainButton } from '@telegram-apps/sdk-react'
 import { useNetworkCheck } from '../hooks/useNetworkCheck'
+import { useReadContract, useAccount } from 'wagmi'
+import { CONTRACT_ADDRESSES, LENDING_POOL_ABI } from '../config/contracts'
+import { formatUnits } from 'viem'
 
 export function Dashboard() {
   const { isConnected, isWrongNetwork } = useNetworkCheck()
+  const { address } = useAccount()
   
-  const [supplied] = useState("1.50") 
-  const [borrowed] = useState("1200.00") 
-  const [healthFactor] = useState(1.75) 
+  // Читаем реальные данные с контракта Абзала
+  const { data: accountData, isLoading } = useReadContract({
+    address: CONTRACT_ADDRESSES.LENDING_POOL,
+    abi: LENDING_POOL_ABI,
+    functionName: 'getUserAccountData',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && !isWrongNetwork, // Запрос идет только если кошелек подключен к нужной сети
+    }
+  })
+
+  // Парсим данные из блокчейна (форматируем BigInt в читаемые строки)
+  const supplied = accountData ? parseFloat(formatUnits(accountData[0], 18)).toFixed(2) : "0.00"
+  const borrowed = accountData ? parseFloat(formatUnits(accountData[1], 18)).toFixed(2) : "0.00"
   
+  // В Solidity Health Factor обычно умножается на 1e18, приводим к стандартному числу
+  const healthFactor = accountData 
+    ? parseFloat(formatUnits(accountData[5], 18)) 
+    : 0.00
+
   const [proposals] = useState([
     { id: 1, title: "PIP-01: Повысить LTV для коллатерала ETH до 80%", state: "Active" },
     { id: 2, title: "PIP-02: Интеграция Chainlink оракула для Arbitrum Sepolia", state: "Executed" }
@@ -19,7 +39,6 @@ export function Dashboard() {
       if (mainButton.mount.isAvailable()) {
         mainButton.mount()
         
-        // Используем метод setParams, который железно поддерживается типами SDK
         mainButton.setParams({
           text: 'ДЕПОЗИТ В VAULT (ERC-4626)',
           backgroundColor: '#2563eb', 
@@ -29,14 +48,13 @@ export function Dashboard() {
         })
 
         const handleMainButtonClick = () => {
-          alert('Инициализация транзакции через смарт-контракт Vault...')
+          alert('Инициализация транзакции deposit() через смарт-контракт Lending Pool...')
         }
 
         const unsubscribe = mainButton.onClick(handleMainButtonClick)
         
         return () => {
           unsubscribe()
-          // Скрываем кнопку при размонтировании
           mainButton.setParams({ isVisible: false })
         }
       }
@@ -48,8 +66,9 @@ export function Dashboard() {
   }, [isConnected, isWrongNetwork])
 
   const getHealthFactorColor = (hf: number) => {
+    if (hf === 0) return 'text-slate-400 border-slate-800 bg-slate-900/40'
     if (hf > 2.0) return 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
-    if (hf > 1.2) return 'text-amber-400 border-amber-500/30 bg-amber-500/10'
+    if (hf > 1.1) return 'text-amber-400 border-amber-500/30 bg-amber-500/10'
     return 'text-red-400 border-red-500/30 bg-red-500/10'
   }
 
@@ -63,16 +82,27 @@ export function Dashboard() {
     )
   }
 
+  if (isLoading) {
+    return (
+      <div className="mt-6 p-8 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-tgLink mx-auto"></div>
+        <p className="text-xs text-tgHint mt-3 font-mono">Запрос состояния Ledger...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="mt-6 space-y-5 pb-24">
       {/* Метрика Health Factor */}
       <div className={`p-4 rounded-2xl border flex items-center justify-between ${getHealthFactorColor(healthFactor)}`}>
         <div>
           <h4 className="text-xs uppercase font-mono tracking-wider opacity-80">Health Factor</h4>
-          <p className="text-2xl font-black tracking-tight mt-0.5">{healthFactor.toFixed(2)}</p>
+          <p className="text-2xl font-black tracking-tight mt-0.5">
+            {healthFactor === 0 ? '—' : healthFactor > 100 ? '∞' : healthFactor.toFixed(2)}
+          </p>
         </div>
         <div className="text-right text-xs font-mono max-w-[180px] opacity-90">
-          {healthFactor > 1.0 ? '✓ Позиция безопасна' : '⚠️ Риск ликвидации!'}
+          {healthFactor === 0 ? 'Нет активных займов' : healthFactor > 1.1 ? '✓ Позиция безопасна' : '⚠️ Риск ликвидации!'}
         </div>
       </div>
 
@@ -89,7 +119,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Секция управления DAO (Требование Силлабуса) */}
+      {/* Секция управления DAO */}
       <div className="bg-tgSecondaryBg/80 p-4 rounded-2xl border border-slate-800/40 space-y-3">
         <h3 className="text-xs font-bold text-tgHint uppercase tracking-wider font-mono">Активные голосования Governance</h3>
         <div className="space-y-2">
