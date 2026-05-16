@@ -11,13 +11,7 @@ import "./interfaces/IOracle.sol";
 import "./interfaces/ILendingPool.sol";
 
 /// @title LendingPool V1 — UUPS Upgradeable DeFi Lending Protocol
-contract LendingPool is
-    Initializable,
-    UUPSUpgradeable,
-    OwnableUpgradeable,
-    ReentrancyGuard,
-    ILendingPool
-{
+contract LendingPool is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard, ILendingPool {
     using SafeERC20 for IERC20;
 
     // ─── Constants ───────────────────────────────────────────────────────────

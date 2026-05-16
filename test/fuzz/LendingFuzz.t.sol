@@ -74,9 +74,7 @@ contract LendingFuzzTest is Test {
         assertGe(pool.healthFactor(alice), 1e18);
     }
 
-    function testFuzz_repay_neverExceedsDebt(uint256 depositAmount, uint256 borrowAmount, uint256 repayAmount)
-        public
-    {
+    function testFuzz_repay_neverExceedsDebt(uint256 depositAmount, uint256 borrowAmount, uint256 repayAmount) public {
         depositAmount = bound(depositAmount, 1000e6, MAX_AMOUNT);
         borrowAmount = bound(borrowAmount, 1, (depositAmount * 75) / 100);
         repayAmount = bound(repayAmount, 1, depositAmount);
