@@ -38,16 +38,19 @@ export function Dashboard() {
     refetchInterval: 10000, // Автообновление логов каждые 10 секунд
   })
   
-  const supplied = accountData ? parseFloat(formatUnits(accountData[0], 18)).toFixed(2) : "0.00"
-  const borrowed = accountData ? parseFloat(formatUnits(accountData[1], 18)).toFixed(2) : "0.00"
-  const healthFactor = accountData ? parseFloat(formatUnits(accountData[5], 18)) : 0.00
+  // Явное приведение типов (Type Assertion) для обхода ошибки TS7053
+  const contractFields = accountData as readonly [bigint, bigint, bigint, bigint, bigint, bigint] | undefined
+
+  const supplied = contractFields ? parseFloat(formatUnits(contractFields[0], 18)).toFixed(2) : "0.00"
+  const borrowed = contractFields ? parseFloat(formatUnits(contractFields[1], 18)).toFixed(2) : "0.00"
+  const healthFactor = contractFields ? parseFloat(formatUnits(contractFields[5], 18)) : 0.00
 
   const [proposals] = useState([
     { id: 1, title: "PIP-01: Повысить LTV для коллатерала ETH до 80%", state: "Active" },
     { id: 2, title: "PIP-02: Интеграция Chainlink оракула для Arbitrum Sepolia", state: "Executed" }
   ])
 
-  // Функция для отправки депозита
+  // ТРАНЗАКЦИЯ 1: Функция для отправки депозита (привязана к Telegram MainButton)
   const handleDeposit = () => {
     const mockAmount = parseUnits("0.1", 18)
     const mockAsset = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889" 
@@ -57,6 +60,40 @@ export function Dashboard() {
       abi: LENDING_POOL_ABI,
       functionName: 'deposit',
       args: [mockAsset, mockAmount],
+    })
+  }
+
+  // ТРАНЗАКЦИЯ 2: Функция займа (Borrow) под залог заведенных активов
+  const handleBorrow = () => {
+    const mockAmount = parseUnits("50", 6) // Условные 50 USDC (6 знаков)
+    const mockAsset = "0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e" 
+
+    writeContract({
+      address: CONTRACT_ADDRESSES.LENDING_POOL,
+      abi: LENDING_POOL_ABI,
+      functionName: 'borrow',
+      args: [mockAsset, mockAmount],
+    })
+  }
+
+  // ТРАНЗАКЦИЯ 3: Функция голосования в OpenZeppelin Governor
+  const handleVote = (proposalId: number, support: number) => {
+    writeContract({
+      address: CONTRACT_ADDRESSES.GOVERNOR, 
+      abi: [
+        {
+          inputs: [
+            { name: 'proposalId', type: 'uint256' },
+            { name: 'support', type: 'uint8' }
+          ],
+          name: 'castVote',
+          outputs: [{ name: 'weight', type: 'uint256' }],
+          stateMutability: 'external',
+          type: 'function'
+        }
+      ] as const, // Обеспечивает строгое соответствие сигнатуры типов
+      functionName: 'castVote',
+      args: [BigInt(proposalId), support],
     })
   }
 
@@ -145,14 +182,25 @@ export function Dashboard() {
 
       {/* Основные DeFi показатели */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-tgSecondaryBg p-4 rounded-2xl border border-slate-800/50">
-          <span className="text-[10px] uppercase font-mono text-tgHint tracking-wider">Total Supplied</span>
-          <p className="text-lg font-bold text-tgText mt-1">{supplied} <span className="text-xs text-tgLink font-sans">ETH</span></p>
+        <div className="bg-tgSecondaryBg p-4 rounded-2xl border border-slate-800/50 flex flex-col justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-mono text-tgHint tracking-wider">Total Supplied</span>
+            <p className="text-lg font-bold text-tgText mt-1">{supplied} <span className="text-xs text-tgLink font-sans">ETH</span></p>
+          </div>
         </div>
 
-        <div className="bg-tgSecondaryBg p-4 rounded-2xl border border-slate-800/50">
-          <span className="text-[10px] uppercase font-mono text-tgHint tracking-wider">Total Borrowed</span>
-          <p className="text-lg font-bold text-tgText mt-1">${borrowed} <span className="text-xs text-slate-500 font-sans">USDC</span></p>
+        <div className="bg-tgSecondaryBg p-4 rounded-2xl border border-slate-800/50 space-y-3">
+          <div>
+            <span className="text-[10px] uppercase font-mono text-tgHint tracking-wider">Total Borrowed</span>
+            <p className="text-lg font-bold text-tgText mt-1">${borrowed} <span className="text-xs text-slate-500 font-sans">USDC</span></p>
+          </div>
+          <button 
+            onClick={handleBorrow}
+            disabled={isPending || isMining}
+            className="w-full py-1.5 bg-tgLink text-white rounded-xl text-xs font-bold font-sans hover:opacity-90 disabled:opacity-40 transition-all"
+          >
+            Borrow 50 USDC
+          </button>
         </div>
       </div>
 
@@ -161,15 +209,44 @@ export function Dashboard() {
         <h3 className="text-xs font-bold text-tgHint uppercase tracking-wider font-mono">Активные голосования Governance</h3>
         <div className="space-y-2">
           {proposals.map((prop) => (
-            <div key={prop.id} className="p-3 bg-slate-900/60 rounded-xl border border-slate-800/30 flex items-center justify-between">
-              <div className="max-w-[70%]">
-                <p className="text-xs font-medium text-tgText truncate">{prop.title}</p>
+            <div key={prop.id} className="p-3 bg-slate-900/60 rounded-xl border border-slate-800/30 flex flex-col space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="max-w-[70%]">
+                  <p className="text-xs font-medium text-tgText truncate">{prop.title}</p>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 font-mono font-bold rounded-md ${
+                  prop.state === 'Active' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-slate-800 text-tgHint'
+                }`}>
+                  {prop.state}
+                </span>
               </div>
-              <span className={`text-[10px] px-2 py-0.5 font-mono font-bold rounded-md ${
-                prop.state === 'Active' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-slate-800 text-tgHint'
-              }`}>
-                {prop.state}
-              </span>
+
+              {/* Блок интерактивного голосования для активных пропозалов */}
+              {prop.state === 'Active' && (
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  <button
+                    onClick={() => handleVote(prop.id, 1)}
+                    disabled={isPending || isMining}
+                    className="py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg text-[10px] font-mono font-bold border border-emerald-500/20 transition-all disabled:opacity-40"
+                  >
+                    За
+                  </button>
+                  <button
+                    onClick={() => handleVote(prop.id, 0)}
+                    disabled={isPending || isMining}
+                    className="py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-[10px] font-mono font-bold border border-red-500/20 transition-all disabled:opacity-40"
+                  >
+                    Против
+                  </button>
+                  <button
+                    onClick={() => handleVote(prop.id, 2)}
+                    disabled={isPending || isMining}
+                    className="py-1.5 bg-slate-800 hover:bg-slate-700 text-tgHint rounded-lg text-[10px] font-mono font-bold border border-slate-700 transition-all disabled:opacity-40"
+                  >
+                    Воздерж.
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

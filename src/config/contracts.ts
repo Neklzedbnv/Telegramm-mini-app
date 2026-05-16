@@ -1,32 +1,41 @@
-// Адреса твоих смарт-контрактов в L2 тестнете
 export const CONTRACT_ADDRESSES = {
-  LENDING_POOL: '0x0000000000000000000000000000000000000000' as `0x${string}`, // Вставь сюда свой адрес контракта
+  LENDING_POOL: '0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889' as `0x${string}`,
+  GOVERNOR: '0x5FbDB2315678afecb367f032d93F642f64180aa3' as `0x${string}`, // Временный Mock-адрес для компиляции ТЗ Никиты
 }
 
-// Минимальный ABI для чтения состояния позиций пользователя и выполнения транзакций
 export const LENDING_POOL_ABI = [
   {
-    inputs: [{ internalType: 'address', name: 'user', type: 'address' }],
+    inputs: [{ name: 'user', type: 'address' }],
     name: 'getUserAccountData',
     outputs: [
-      { internalType: 'uint256', name: 'totalCollateralBase', type: 'uint256' },
-      { internalType: 'uint256', name: 'totalDebtBase', type: 'uint256' },
-      { internalType: 'uint256', name: 'availableBorrowsBase', type: 'uint256' },
-      { internalType: 'uint256', name: 'currentLiquidationThreshold', type: 'uint256' },
-      { internalType: 'uint256', name: 'ltv', type: 'uint256' },
-      { internalType: 'uint256', name: 'healthFactor', type: 'uint256' },
+      { name: 'totalCollateralBase', type: 'uint256' },
+      { name: 'totalDebtBase', type: 'uint256' },
+      { name: 'availableBorrowsBase', type: 'uint256' },
+      { name: 'currentLiquidationThreshold', type: 'uint256' },
+      { name: 'ltv', type: 'uint256' },
+      { name: 'healthFactor', type: 'uint256' }
     ],
     stateMutability: 'view',
-    type: 'function',
+    type: 'function'
   },
   {
     inputs: [
-      { internalType: 'address', name: 'asset', type: 'address' },
-      { internalType: 'uint256', name: 'amount', type: 'uint256' },
+      { name: 'asset', type: 'address' },
+      { name: 'amount', type: 'uint256' }
     ],
     name: 'deposit',
     outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
+    stateMutability: 'external',
+    type: 'function'
+  },
+  {
+    inputs: [
+      { name: 'asset', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    name: 'borrow',
+    outputs: [],
+    stateMutability: 'external',
+    type: 'function'
   }
-] as const // const кастинг обязателен для автокомплита типов в Wagmi v2
+] as const // Обязательно as const для строгого вывода типов в viem/wagmi
