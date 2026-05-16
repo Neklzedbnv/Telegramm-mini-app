@@ -1,57 +1,70 @@
 import { useState, useEffect } from 'react'
 import { mainButton } from '@telegram-apps/sdk-react'
 import { useNetworkCheck } from '../hooks/useNetworkCheck'
-import { useReadContract, useAccount } from 'wagmi'
+import { useReadContract, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { CONTRACT_ADDRESSES, LENDING_POOL_ABI } from '../config/contracts'
-import { formatUnits } from 'viem'
+import { formatUnits, parseUnits } from 'viem'
 
 export function Dashboard() {
   const { isConnected, isWrongNetwork } = useNetworkCheck()
   const { address } = useAccount()
   
-  // Читаем реальные данные с контракта Абзала
-  const { data: accountData, isLoading } = useReadContract({
+  // Хуки для отправки транзакции
+  const { writeContract, data: hash, error: writeError, isPending } = useWriteContract()
+  
+  // Отслеживание статуса транзакции в блокчейне (майнинг)
+  const { isLoading: isMining, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
+    hash,
+  })
+
+  // Читаем реальные данные с контракта
+  const { data: accountData, isLoading: isContractLoading } = useReadContract({
     address: CONTRACT_ADDRESSES.LENDING_POOL,
     abi: LENDING_POOL_ABI,
     functionName: 'getUserAccountData',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address && !isWrongNetwork, // Запрос идет только если кошелек подключен к нужной сети
+      enabled: !!address && !isWrongNetwork,
     }
   })
-
-  // Парсим данные из блокчейна (форматируем BigInt в читаемые строки)
+  
   const supplied = accountData ? parseFloat(formatUnits(accountData[0], 18)).toFixed(2) : "0.00"
   const borrowed = accountData ? parseFloat(formatUnits(accountData[1], 18)).toFixed(2) : "0.00"
-  
-  // В Solidity Health Factor обычно умножается на 1e18, приводим к стандартному числу
-  const healthFactor = accountData 
-    ? parseFloat(formatUnits(accountData[5], 18)) 
-    : 0.00
+  const healthFactor = accountData ? parseFloat(formatUnits(accountData[5], 18)) : 0.00
 
   const [proposals] = useState([
     { id: 1, title: "PIP-01: Повысить LTV для коллатерала ETH до 80%", state: "Active" },
     { id: 2, title: "PIP-02: Интеграция Chainlink оракула для Arbitrum Sepolia", state: "Executed" }
   ])
 
+  // Функция для отправки депозита
+  const handleDeposit = () => {
+    const mockAmount = parseUnits("0.1", 18)
+    const mockAsset = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889" 
+
+    writeContract({
+      address: CONTRACT_ADDRESSES.LENDING_POOL,
+      abi: LENDING_POOL_ABI,
+      functionName: 'deposit',
+      args: [mockAsset, mockAmount],
+    })
+  }
+
+  // Синхронизация нативной кнопки Telegram с жизненным циклом транзакции
   useEffect(() => {
     if (isConnected && !isWrongNetwork) {
       if (mainButton.mount.isAvailable()) {
         mainButton.mount()
         
         mainButton.setParams({
-          text: 'ДЕПОЗИТ В VAULT (ERC-4626)',
-          backgroundColor: '#2563eb', 
+          text: isPending ? 'ПОДТВЕРДИТЕ В КОШЕЛЬКЕ...' : isMining ? 'ОБРАБОТКА ТРАНЗАКЦИИ...' : 'ДЕПОЗИТ 0.1 ETH В VAULT',
+          backgroundColor: isPending || isMining ? '#94a3b8' : '#2563eb', 
           textColor: '#ffffff',
           isVisible: true,
-          isEnabled: true
+          isEnabled: !isPending && !isMining
         })
 
-        const handleMainButtonClick = () => {
-          alert('Инициализация транзакции deposit() через смарт-контракт Lending Pool...')
-        }
-
-        const unsubscribe = mainButton.onClick(handleMainButtonClick)
+        const unsubscribe = mainButton.onClick(handleDeposit)
         
         return () => {
           unsubscribe()
@@ -63,7 +76,7 @@ export function Dashboard() {
         mainButton.setParams({ isVisible: false })
       }
     }
-  }, [isConnected, isWrongNetwork])
+  }, [isConnected, isWrongNetwork, isPending, isMining])
 
   const getHealthFactorColor = (hf: number) => {
     if (hf === 0) return 'text-slate-400 border-slate-800 bg-slate-900/40'
@@ -82,7 +95,7 @@ export function Dashboard() {
     )
   }
 
-  if (isLoading) {
+  if (isContractLoading) {
     return (
       <div className="mt-6 p-8 text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-tgLink mx-auto"></div>
@@ -93,6 +106,20 @@ export function Dashboard() {
 
   return (
     <div className="mt-6 space-y-5 pb-24">
+      {/* Информационные плашки статуса транзакции */}
+      {hash && (
+        <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs font-mono space-y-1">
+          <p className="text-tgHint">Tx Hash: <span className="text-tgText break-all text-[11px]">{hash}</span></p>
+          {isMining && <p className="text-amber-400 animate-pulse">● Майнинг транзакции в L2 сети...</p>}
+          {isTxSuccess && <p className="text-emerald-400">✓ Транзакция успешно подтверждена!</p>}
+          {writeError && (
+            <p className="text-red-400">
+              ⚠️ Ошибка: {(writeError as any).shortMessage || (writeError as any).message || 'Отклонено пользователем'}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Метрика Health Factor */}
       <div className={`p-4 rounded-2xl border flex items-center justify-between ${getHealthFactorColor(healthFactor)}`}>
         <div>
