@@ -142,7 +142,6 @@ jobs:
     name: Fork Tests
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ vars.FORK_RPC_URL != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -158,7 +157,7 @@ jobs:
 
       - name: Run fork tests
         env:
-          FORK_RPC_URL: ${{ vars.FORK_RPC_URL }}
+          FORK_RPC_URL: ${{ secrets.FORK_RPC_URL }}
         run: forge test --match-path "test/fork/**" -v
 
   # ─── Static Analysis (Slither) ───────────────────────────────────────────────
