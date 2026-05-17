@@ -7,7 +7,7 @@ import "../contracts/governance/DeFiGovernor.sol";
 
 /// @notice Self-delegate DGT and create two demo governance proposals
 contract CreateProposal is Script {
-    address constant DGT      = 0x3516c36c76D19Cb3fBc81B5EfFdbD11aa89BaDF4;
+    address constant DGT = 0x3516c36c76D19Cb3fBc81B5EfFdbD11aa89BaDF4;
     address constant GOVERNOR = 0xA2F72eB781dCD791F95E4c0E4bb26DCF11a94a6C;
     address constant TIMELOCK = 0x8Ae65c04cEc1040b74ed8C425a2D79e59F5B08Dd;
 
