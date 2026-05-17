@@ -3,40 +3,99 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Script.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import "../src/LendingPool.sol";
-import "../src/YieldVault.sol";
-import "../src/mocks/MockOracle.sol";
-import "../src/mocks/MockERC20.sol";
+import "../contracts/core/LendingPoolV1.sol";
+import "../contracts/core/PoolFactory.sol";
+import "../contracts/vault/YieldVault.sol";
+import "../contracts/governance/DeFiToken.sol";
+import "../contracts/oracle/ChainlinkOracleAdapter.sol";
+import "../contracts/mocks/MockOracle.sol";
+import "../contracts/mocks/MockERC20.sol";
 
+/// @title Deploy
+/// @notice Full protocol deployment script for Arbitrum Sepolia (or local Anvil fork)
+/// @dev Usage:
+///      Local:   forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
+///      Testnet: forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast --verify
+///
+/// Required env vars:
+///   PRIVATE_KEY        — deployer private key
+///   RPC_URL            — target network RPC
+///   ETHERSCAN_API_KEY  — Arbiscan API key (for --verify)
+///
+/// Optional env vars:
+///   USE_MOCK_ORACLE    — set to "true" to deploy MockOracle (default for local/testnet)
+///   INITIAL_TOKEN_SUPPLY — DeFiToken initial supply (default: 10_000_000e18)
 contract Deploy is Script {
+    address public oracle;
+    address public lendingPoolImpl;
+    address public lendingPool;
+    address public factory;
+    address public vault;
+    address public governanceToken;
+    address public usdc;
+
+    uint256 constant DEFAULT_INITIAL_SUPPLY = 10_000_000e18;
+    uint256 constant USDC_MOCK_PRICE = 1e30; // $1 for 6-decimal USDC
+
     function run() external {
-        address deployer = vm.envAddress("DEPLOYER");
-        vm.startBroadcast(deployer);
+        uint256 deployerKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerKey);
 
-        // Deploy mock oracle (replace with Chainlink oracle for mainnet)
-        MockOracle oracle = new MockOracle();
+        bool useMockOracle = _strEq(vm.envOr("USE_MOCK_ORACLE", string("true")), "true");
+        uint256 initialSupply = vm.envOr("INITIAL_TOKEN_SUPPLY", DEFAULT_INITIAL_SUPPLY);
 
-        // Deploy LendingPool implementation
-        LendingPool impl = new LendingPool();
+        vm.startBroadcast(deployerKey);
 
-        // Deploy proxy
-        bytes memory initData = abi.encodeCall(LendingPool.initialize, (address(oracle), deployer));
-        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
-        LendingPool pool = LendingPool(address(proxy));
+        // 1. Oracle
+        if (useMockOracle) {
+            MockOracle mockOracle = new MockOracle();
+            oracle = address(mockOracle);
+            console2.log("MockOracle:              ", oracle);
+        } else {
+            ChainlinkOracleAdapter chainlinkAdapter = new ChainlinkOracleAdapter(deployer);
+            oracle = address(chainlinkAdapter);
+            console2.log("ChainlinkOracleAdapter:  ", oracle);
+        }
 
-        // Deploy mock token
-        MockERC20 usdc = new MockERC20("Mock USDC", "USDC", 6);
-        oracle.setPrice(address(usdc), 1e18); // $1 per token (18 decimal precision)
-        pool.addSupportedToken(address(usdc));
+        // 2. LendingPoolV1 Implementation + Proxy
+        lendingPoolImpl = address(new LendingPoolV1());
+        bytes memory initData = abi.encodeCall(LendingPoolV1.initialize, (oracle, deployer));
+        lendingPool = address(new ERC1967Proxy(lendingPoolImpl, initData));
 
-        // Deploy YieldVault
-        YieldVault vault = new YieldVault(IERC20(address(usdc)), address(pool), deployer);
+        console2.log("LendingPoolV1 impl:      ", lendingPoolImpl);
+        console2.log("LendingPool proxy:       ", lendingPool);
+
+        // 3. PoolFactory
+        factory = address(new PoolFactory(deployer));
+        console2.log("PoolFactory:             ", factory);
+
+        // 4. Governance Token
+        governanceToken = address(new DeFiToken(deployer, initialSupply));
+        console2.log("DeFiToken (DGT):         ", governanceToken);
+
+        // 5. Mock USDC (for testnet / local only)
+        if (useMockOracle) {
+            MockERC20 mockUsdc = new MockERC20("USD Coin", "USDC", 6);
+            usdc = address(mockUsdc);
+            console2.log("MockUSDC:                ", usdc);
+
+            MockOracle(oracle).setPrice(usdc, USDC_MOCK_PRICE);
+            LendingPoolV1(lendingPool).addSupportedToken(usdc);
+            mockUsdc.mint(deployer, 1_000_000e6);
+
+            // 6. YieldVault
+            vault = address(new YieldVault(IERC20(usdc), lendingPool, deployer));
+            console2.log("YieldVault:              ", vault);
+        }
 
         vm.stopBroadcast();
 
-        console.log("Oracle:      ", address(oracle));
-        console.log("LendingPool: ", address(pool));
-        console.log("YieldVault:  ", address(vault));
-        console.log("USDC:        ", address(usdc));
+        console2.log("\n=== DEPLOYMENT COMPLETE ===");
+        console2.log("Network:", block.chainid);
+        console2.log("Deployer:", deployer);
+    }
+
+    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }

@@ -1,0 +1,10 @@
+{
+  "detectors_to_exclude": [
+    "solc-version",
+    "low-level-calls"
+  ],
+  "exclude_dependencies": true,
+  "filter_paths": "contracts/mocks/|contracts/attacks/|lib/",
+  "compile_force_framework": "foundry",
+  "foundry_ignore_compile_warnings": true
+}
