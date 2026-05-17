@@ -18,7 +18,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
           submodules: recursive
@@ -37,3 +37,5 @@ jobs:
 
       - name: Run Forge tests
         run: forge test -vvv
+        env:
+          FORK_RPC_URL: ${{ secrets.FORK_RPC_URL }}
