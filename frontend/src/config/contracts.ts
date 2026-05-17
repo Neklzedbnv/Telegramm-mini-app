@@ -165,6 +165,18 @@ export const GOVERNOR_ABI = [
     stateMutability: 'nonpayable',
     type: 'function',
   },
+  {
+    inputs: [
+      { name: 'targets',     type: 'address[]' },
+      { name: 'values',      type: 'uint256[]' },
+      { name: 'calldatas',   type: 'bytes[]'   },
+      { name: 'description', type: 'string'    },
+    ],
+    name: 'propose',
+    outputs: [{ name: 'proposalId', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
 ] as const
 
 export const AMM_ABI = [

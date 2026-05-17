@@ -143,11 +143,12 @@ export function Dashboard() {
   ]
 
   // ── Local UI state ─────────────────────────────────────────────────────────
-  const [depositAmt,  setDepositAmt]  = useState('100')
-  const [borrowAmt,   setBorrowAmt]   = useState('50')
-  const [repayAmt,    setRepayAmt]    = useState('50')
-  const [withdrawAmt, setWithdrawAmt] = useState('100')
-  const [swapAmount,  setSwapAmount]  = useState('100')
+  const [depositAmt,   setDepositAmt]   = useState('100')
+  const [borrowAmt,    setBorrowAmt]    = useState('50')
+  const [repayAmt,     setRepayAmt]     = useState('50')
+  const [withdrawAmt,  setWithdrawAmt]  = useState('100')
+  const [swapAmount,   setSwapAmount]   = useState('100')
+  const [proposalDesc, setProposalDesc] = useState('')
   const [txLabel,    setTxLabel]    = useState('')
 
   // Refetch everything after successful tx
@@ -233,6 +234,19 @@ export function Dashboard() {
       address: CONTRACT_ADDRESSES.LENDING_POOL, abi: LENDING_POOL_ABI,
       functionName: 'withdraw',
       args: [CONTRACT_ADDRESSES.USDC, amount],
+      ...GAS_FEES,
+    })
+  }
+
+  const handlePropose = () => {
+    const desc = proposalDesc.trim()
+    if (!desc || !address) return
+    setTxLabel('Create proposal')
+    writeContract({
+      address: CONTRACT_ADDRESSES.GOVERNOR, abi: GOVERNOR_ABI,
+      functionName: 'propose',
+      // text-only proposal: target = zero address, value = 0, calldata = 0x
+      args: [[address], [0n], ['0x'], desc],
       ...GAS_FEES,
     })
   }
@@ -498,6 +512,28 @@ export function Dashboard() {
               )}
             </div>
           ))}
+        </div>
+
+        {/* Create proposal */}
+        <div className="space-y-2 pt-1">
+          <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Create new proposal</p>
+          <textarea
+            value={proposalDesc}
+            onChange={e => setProposalDesc(e.target.value)}
+            placeholder="Describe your proposal (e.g. PIP-03: Adjust liquidation penalty to 8%)"
+            rows={3}
+            className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800/80 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500/40 resize-none"
+          />
+          <button
+            onClick={handlePropose}
+            disabled={btnDisabled || !proposalDesc.trim() || !delegated}
+            className="w-full py-2 bg-blue-600/80 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-30"
+          >
+            {btnDisabled ? '...' : 'Submit Proposal'}
+          </button>
+          {!delegated && (
+            <p className="text-[10px] text-yellow-400/70">You must delegate DGT first to create proposals</p>
+          )}
         </div>
       </div>
 
