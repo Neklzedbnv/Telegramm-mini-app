@@ -143,9 +143,11 @@ export function Dashboard() {
   ]
 
   // ── Local UI state ─────────────────────────────────────────────────────────
-  const [depositAmt, setDepositAmt] = useState('100')
-  const [borrowAmt,  setBorrowAmt]  = useState('50')
-  const [swapAmount, setSwapAmount] = useState('100')
+  const [depositAmt,  setDepositAmt]  = useState('100')
+  const [borrowAmt,   setBorrowAmt]   = useState('50')
+  const [repayAmt,    setRepayAmt]    = useState('50')
+  const [withdrawAmt, setWithdrawAmt] = useState('100')
+  const [swapAmount,  setSwapAmount]  = useState('100')
   const [txLabel,    setTxLabel]    = useState('')
 
   // Refetch everything after successful tx
@@ -206,6 +208,30 @@ export function Dashboard() {
     writeContract({
       address: CONTRACT_ADDRESSES.LENDING_POOL, abi: LENDING_POOL_ABI,
       functionName: 'borrow',
+      args: [CONTRACT_ADDRESSES.USDC, amount],
+      ...GAS_FEES,
+    })
+  }
+
+  const handleRepay = () => {
+    const amount = parseUnits(repayAmt || '0', 6)
+    if (amount === 0n) return
+    setTxLabel(`Repay ${repayAmt} USDC`)
+    writeContract({
+      address: CONTRACT_ADDRESSES.LENDING_POOL, abi: LENDING_POOL_ABI,
+      functionName: 'repay',
+      args: [CONTRACT_ADDRESSES.USDC, amount],
+      ...GAS_FEES,
+    })
+  }
+
+  const handleWithdraw = () => {
+    const amount = parseUnits(withdrawAmt || '0', 6)
+    if (amount === 0n) return
+    setTxLabel(`Withdraw ${withdrawAmt} USDC`)
+    writeContract({
+      address: CONTRACT_ADDRESSES.LENDING_POOL, abi: LENDING_POOL_ABI,
+      functionName: 'withdraw',
       args: [CONTRACT_ADDRESSES.USDC, amount],
       ...GAS_FEES,
     })
@@ -384,6 +410,32 @@ export function Dashboard() {
             <button onClick={handleBorrow} disabled={btnDisabled}
               className="px-4 py-2 bg-purple-600/80 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-30">
               {btnDisabled ? '...' : 'Borrow'}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[10px] text-slate-500">Repay borrowed USDC</p>
+          <div className="flex gap-2">
+            <input type="number" value={repayAmt} onChange={e => setRepayAmt(e.target.value)}
+              placeholder="Amount USDC"
+              className="flex-1 px-3 py-2 bg-slate-950/60 border border-slate-800/80 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/40" />
+            <button onClick={handleRepay} disabled={btnDisabled}
+              className="px-4 py-2 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-30">
+              {btnDisabled ? '...' : 'Repay'}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[10px] text-slate-500">Withdraw collateral</p>
+          <div className="flex gap-2">
+            <input type="number" value={withdrawAmt} onChange={e => setWithdrawAmt(e.target.value)}
+              placeholder="Amount USDC"
+              className="flex-1 px-3 py-2 bg-slate-950/60 border border-slate-800/80 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-orange-500/40" />
+            <button onClick={handleWithdraw} disabled={btnDisabled}
+              className="px-4 py-2 bg-orange-600/80 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-30">
+              {btnDisabled ? '...' : 'Withdraw'}
             </button>
           </div>
         </div>
