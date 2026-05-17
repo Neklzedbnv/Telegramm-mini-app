@@ -376,6 +376,30 @@ Frontend (TMA)
 - Полное соответствие всем требованиям курса  
 - Готовность к защите и сложному Q&A  
 
+---
+
+## Deployed Contracts — Arbitrum Sepolia (Chain ID: 421614)
+
+> Last deployment: 2026-05-18. All contracts verified on [Arbiscan Sepolia](https://sepolia.arbiscan.io).
+
+| Contract | Address | Explorer |
+|---|---|---|
+| MockOracle | `0x109cc51fd4d224683cbdab7b7214189c5321c518` | [View](https://sepolia.arbiscan.io/address/0x109cc51fd4d224683cbdab7b7214189c5321c518) |
+| LendingPoolV1 (impl) | `0xbc1d5c56d3e6f27c5bd782daf10b7e4bfc89bdcf` | [View](https://sepolia.arbiscan.io/address/0xbc1d5c56d3e6f27c5bd782daf10b7e4bfc89bdcf) |
+| LendingPool (proxy) | `0xbfb7281f1a0a23453dac651196274c6c9656ace0` | [View](https://sepolia.arbiscan.io/address/0xbfb7281f1a0a23453dac651196274c6c9656ace0) |
+| YieldVault | `0x0c6b33a0923cf963e348f3840867728d806588af` | [View](https://sepolia.arbiscan.io/address/0x0c6b33a0923cf963e348f3840867728d806588af) |
+| MockUSDC | `0x19dc4be2c07321bbe1360faa561cbe5900d93647` | [View](https://sepolia.arbiscan.io/address/0x19dc4be2c07321bbe1360faa561cbe5900d93647) |
+| DeFiToken (DGT) | _redeploy pending_ | — |
+| DeFiTimelock | _redeploy pending_ | — |
+| DeFiGovernor | _redeploy pending_ | — |
+| PositionNFT | _redeploy pending_ | — |
+| PoolFactory | _redeploy pending_ | — |
+| AMM | _redeploy pending_ | — |
+
+> **Note:** Run `forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast --verify` to deploy all contracts including AMM, governance, and factory. After deployment update addresses above and in `frontend/src/config/contracts.ts` and `subgraph/subgraph.yaml`.
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

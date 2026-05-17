@@ -49,3 +49,47 @@ type UserPosition @entity {
   liquidationCount: Int!
   lastActivityTimestamp: BigInt!
 }
+
+# ─── AMM Entities ────────────────────────────────────────────────────────────
+
+type Swap @entity(immutable: true) {
+  id: Bytes!
+  sender: Bytes! # address
+  tokenIn: Bytes! # address
+  amountIn: BigInt!
+  tokenOut: Bytes! # address
+  amountOut: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type LiquidityAdded @entity(immutable: true) {
+  id: Bytes!
+  provider: Bytes! # address
+  amountA: BigInt!
+  amountB: BigInt!
+  shares: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type LiquidityRemoved @entity(immutable: true) {
+  id: Bytes!
+  provider: Bytes! # address
+  amountA: BigInt!
+  amountB: BigInt!
+  shares: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type AMMStats @entity {
+  id: Bytes! # singleton: Bytes("amm")
+  totalSwaps: BigInt!
+  totalVolumeTokenA: BigInt!
+  totalVolumeTokenB: BigInt!
+  lastUpdatedTimestamp: BigInt!
+}

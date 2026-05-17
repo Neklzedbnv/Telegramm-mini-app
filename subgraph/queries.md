@@ -66,3 +66,48 @@ query RepaysByToken($token: Bytes!) {
   }
 }
 ```
+
+## Q6 — Recent AMM swaps (last 20)
+```graphql
+query RecentSwaps {
+  swaps(orderBy: blockTimestamp, orderDirection: desc, first: 20) {
+    sender
+    tokenIn
+    amountIn
+    tokenOut
+    amountOut
+    blockTimestamp
+    transactionHash
+  }
+}
+```
+
+## Q7 — AMM liquidity events for a provider
+```graphql
+query ProviderLiquidity($provider: Bytes!) {
+  liquidityAddeds(where: { provider: $provider }, orderBy: blockTimestamp, orderDirection: desc) {
+    amountA
+    amountB
+    shares
+    blockTimestamp
+  }
+  liquidityRemoveds(where: { provider: $provider }, orderBy: blockTimestamp, orderDirection: desc) {
+    amountA
+    amountB
+    shares
+    blockTimestamp
+  }
+}
+```
+
+## Q8 — AMM protocol stats (total swaps + volume)
+```graphql
+query AMMStats {
+  ammStats(id: "0x616d6d") {
+    totalSwaps
+    totalVolumeTokenA
+    totalVolumeTokenB
+    lastUpdatedTimestamp
+  }
+}
+```

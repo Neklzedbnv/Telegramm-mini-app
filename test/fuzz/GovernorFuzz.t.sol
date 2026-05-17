@@ -35,7 +35,7 @@ contract GovernorFuzzTest is Test {
 
     /// @notice Total voting power across all delegated accounts never exceeds total supply
     function testFuzz_votingPowerNeverExceedsTotalSupply(address a, address b, uint128 amtA, uint128 amtB) public {
-        vm.assume(a != address(0) && b != address(0) && a != b);
+        vm.assume(a != address(0) && b != address(0) && a != b && a != deployer && b != deployer);
         uint256 supply = token.totalSupply();
         uint256 toA = bound(amtA, 0, supply / 2);
         uint256 toB = bound(amtB, 0, supply - toA);

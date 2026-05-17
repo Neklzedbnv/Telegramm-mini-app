@@ -13,6 +13,7 @@ import "../contracts/tokens/PositionNFT.sol";
 import "../contracts/oracle/ChainlinkOracleAdapter.sol";
 import "../contracts/mocks/MockOracle.sol";
 import "../contracts/mocks/MockERC20.sol";
+import "../contracts/core/AMM.sol";
 import "@openzeppelin/contracts/governance/utils/IVotes.sol";
 
 /// @title Deploy
@@ -40,6 +41,9 @@ contract Deploy is Script {
     address public governorAddr;
     address public positionNFTAddr;
     address public usdc;
+    address public tokenA;
+    address public tokenB;
+    address public ammAddr;
 
     uint256 constant DEFAULT_INITIAL_SUPPLY = 10_000_000e18;
     uint256 constant USDC_MOCK_PRICE = 1e30; // $1 for 6-decimal USDC
@@ -120,6 +124,27 @@ contract Deploy is Script {
             // 8. YieldVault
             vault = address(new YieldVault(IERC20(usdc), lendingPool, deployer));
             console2.log("YieldVault:              ", vault);
+
+            // 9. AMM — two mock ERC20 tokens + seed liquidity
+            MockERC20 tA = new MockERC20("Mock TokenA", "TKNA", 18);
+            MockERC20 tB = new MockERC20("Mock TokenB", "TKNB", 18);
+            tokenA = address(tA);
+            tokenB = address(tB);
+            console2.log("AMM TokenA:              ", tokenA);
+            console2.log("AMM TokenB:              ", tokenB);
+
+            AMM amm = new AMM(tokenA, tokenB);
+            ammAddr = address(amm);
+            console2.log("AMM:                     ", ammAddr);
+
+            // Seed initial liquidity so the pool is usable immediately
+            uint256 seedAmount = 100_000e18;
+            tA.mint(deployer, seedAmount);
+            tB.mint(deployer, seedAmount);
+            tA.approve(ammAddr, seedAmount);
+            tB.approve(ammAddr, seedAmount);
+            amm.addLiquidity(seedAmount, seedAmount);
+            console2.log("AMM seeded with 100k TKNA / 100k TKNB");
         }
 
         vm.stopBroadcast();

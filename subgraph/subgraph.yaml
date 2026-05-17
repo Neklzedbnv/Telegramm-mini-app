@@ -32,3 +32,30 @@ dataSources:
         - event: Liquidated(indexed address,indexed address,indexed address,address,uint256,uint256)
           handler: handleLiquidated
       file: ./src/mappings.ts
+  - kind: ethereum
+    name: AMM
+    network: arbitrum-sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # replace with deployed AMM address
+      abi: AMM
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Swap
+        - LiquidityAdded
+        - LiquidityRemoved
+        - AMMStats
+      abis:
+        - name: AMM
+          file: ./abis/AMM.json
+      eventHandlers:
+        - event: Swap(indexed address,indexed address,uint256,indexed address,uint256)
+          handler: handleSwap
+        - event: LiquidityAdded(indexed address,uint256,uint256,uint256)
+          handler: handleLiquidityAdded
+        - event: LiquidityRemoved(indexed address,uint256,uint256,uint256)
+          handler: handleLiquidityRemoved
+      file: ./src/mappings.ts
