@@ -11,7 +11,13 @@ import {
   ERC20_ABI,
   PROPOSAL_IDS,
 } from '../config/contracts'
-import { formatUnits, parseUnits } from 'viem'
+import { formatUnits, parseUnits, parseGwei } from 'viem'
+
+// Arbitrum Sepolia base fee is ~0.01–0.02 gwei; use 0.5 gwei as safe ceiling
+const GAS_FEES = {
+  maxFeePerGas: parseGwei('0.5'),
+  maxPriorityFeePerGas: parseGwei('0.001'),
+} as const
 import { useQuery } from '@tanstack/react-query'
 import { fetchUserDeposits } from '../config/graphql'
 
@@ -177,6 +183,7 @@ export function Dashboard() {
       address: CONTRACT_ADDRESSES.USDC, abi: ERC20_ABI,
       functionName: 'approve',
       args: [CONTRACT_ADDRESSES.LENDING_POOL, parseUnits('1000000', 6)],
+      ...GAS_FEES,
     })
   }
 
@@ -188,6 +195,7 @@ export function Dashboard() {
       address: CONTRACT_ADDRESSES.LENDING_POOL, abi: LENDING_POOL_ABI,
       functionName: 'deposit',
       args: [CONTRACT_ADDRESSES.USDC, amount],
+      ...GAS_FEES,
     })
   }
 
@@ -199,6 +207,7 @@ export function Dashboard() {
       address: CONTRACT_ADDRESSES.LENDING_POOL, abi: LENDING_POOL_ABI,
       functionName: 'borrow',
       args: [CONTRACT_ADDRESSES.USDC, amount],
+      ...GAS_FEES,
     })
   }
 
@@ -209,6 +218,7 @@ export function Dashboard() {
       address: CONTRACT_ADDRESSES.DEFI_TOKEN, abi: DEFI_TOKEN_ABI,
       functionName: 'delegate',
       args: [address],
+      ...GAS_FEES,
     })
   }
 
@@ -219,6 +229,7 @@ export function Dashboard() {
       address: CONTRACT_ADDRESSES.GOVERNOR, abi: GOVERNOR_ABI,
       functionName: 'castVote',
       args: [proposalId, support],
+      ...GAS_FEES,
     })
   }
 
@@ -228,6 +239,7 @@ export function Dashboard() {
       address: CONTRACT_ADDRESSES.TOKEN_A, abi: ERC20_ABI,
       functionName: 'approve',
       args: [CONTRACT_ADDRESSES.AMM, parseUnits('1000000', 18)],
+      ...GAS_FEES,
     })
   }
 
@@ -239,6 +251,7 @@ export function Dashboard() {
       address: CONTRACT_ADDRESSES.AMM, abi: AMM_ABI,
       functionName: 'swap',
       args: [CONTRACT_ADDRESSES.TOKEN_A, amountIn, 0n],
+      ...GAS_FEES,
     })
   }
 

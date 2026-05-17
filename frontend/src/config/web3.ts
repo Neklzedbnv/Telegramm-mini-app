@@ -13,13 +13,23 @@ const projectId = (!envProjectId || envProjectId === 'YOUR_WALLETCONNECT_PROJECT
   ? '95a3815f91fec4678855db88588527a2' // Публичный тестовый Project ID
   : envProjectId
 
+// Arbitrum Sepolia с повышенным множителем комиссий (избегает "max fee < base fee")
+const arbitrumSepoliaWithFees = {
+  ...arbitrumSepolia,
+  fees: {
+    baseFeeMultiplier: 1.5,
+  },
+} as const
+
 // Официальное требование силлабуса: поддержка Layer 2 Rollups решений
-export const chains = [arbitrumSepolia, optimismSepolia] as const
+export const chains = [arbitrumSepoliaWithFees, optimismSepolia] as const
 
 export const wagmiConfig = createConfig({
   chains,
   transports: {
-    [arbitrumSepolia.id]: http(),
+    [arbitrumSepoliaWithFees.id]: http('https://sepolia-rollup.arbitrum.io/rpc', {
+      fetchOptions: { cache: 'no-store' },
+    }),
     [optimismSepolia.id]: http(),
   },
 })
