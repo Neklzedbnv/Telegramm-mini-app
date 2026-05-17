@@ -309,9 +309,8 @@ contract LendingPoolV1 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Re
         (price, updatedAt) = oracle.getPrice(token);
         if (price == 0) revert InvalidPrice();
         // Staleness check: compatible with both MockOracle and ChainlinkOracleAdapter
-        unchecked {
-            if (block.timestamp - updatedAt > STALE_PRICE_DELAY) revert InvalidPrice();
-        }
+        if (updatedAt == 0 || updatedAt > block.timestamp) revert InvalidPrice();
+        if (block.timestamp - updatedAt > STALE_PRICE_DELAY) revert InvalidPrice();
     }
 
     // ─── UUPS ─────────────────────────────────────────────────────────────────

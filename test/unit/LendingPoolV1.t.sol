@@ -27,6 +27,9 @@ contract LendingPoolV1Test is Test {
     uint256 constant PRECISION = 1e18;
 
     function setUp() public {
+        // Warp to future timestamp for stale price calculations
+        vm.warp(100_000);
+
         oracle = new MockOracle();
         LendingPoolV1 impl = new LendingPoolV1();
         bytes memory initData = abi.encodeCall(LendingPoolV1.initialize, (address(oracle), address(this)));

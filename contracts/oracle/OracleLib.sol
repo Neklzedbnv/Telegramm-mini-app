@@ -48,12 +48,12 @@ library OracleLib {
         // Zero updatedAt means the round was never completed
         if (updatedAt == 0) revert StalePrice(address(feed), updatedAt);
 
-        // Price is older than our tolerance window
-        unchecked {
-            // safe: block.timestamp >= updatedAt always (monotonic clock)
-            if (block.timestamp - updatedAt > STALE_TIMEOUT) {
-                revert StalePrice(address(feed), updatedAt);
-            }
+        // Guard against future timestamps (monotonic clock violation)
+        if (updatedAt > block.timestamp) revert StalePrice(address(feed), updatedAt);
+
+        // Price is older than our tolerance window (safe: updatedAt <= block.timestamp guaranteed above)
+        if (block.timestamp - updatedAt > STALE_TIMEOUT) {
+            revert StalePrice(address(feed), updatedAt);
         }
 
         // Non-positive price is nonsensical for an asset price

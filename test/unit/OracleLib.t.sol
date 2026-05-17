@@ -37,10 +37,18 @@ contract OracleLibTest is Test {
     int256 constant PRICE_2000_USD = 2000e8; // $2000 in 8-decimal feed format
 
     function setUp() public {
+        // Warp to a future timestamp to allow stale price calculations
+        vm.warp(100_000);
+
         harness = new OracleLibHarness();
         feed8 = new MockV3Aggregator(8, PRICE_2000_USD);
         feed18 = new MockV3Aggregator(18, 2000e18);
         feed6 = new MockV3Aggregator(6, 2000e6);
+
+        // Update feeds to current block.timestamp (fresh prices)
+        feed8.updateRoundData(1, PRICE_2000_USD, block.timestamp, block.timestamp);
+        feed18.updateRoundData(1, 2000e18, block.timestamp, block.timestamp);
+        feed6.updateRoundData(1, 2000e6, block.timestamp, block.timestamp);
     }
 
     // ─── normalizeToWad ───────────────────────────────────────────────────────
