@@ -1,4 +1,5 @@
 # Security Audit Report
+
 ## DeFi Super-App Protocol — Internal Audit
 
 **Network:** Arbitrum Sepolia  
@@ -10,6 +11,7 @@
 This internal audit covers the full smart contract codebase of the DeFi Super-App protocol, built as a Telegram Mini App on Arbitrum Sepolia. The protocol implements a cross-collateral lending pool (LendingPoolV1/V2), an ERC4626 yield vault (YieldVault), a governance token (DeFiToken), an on-chain governance stack (DeFiGovernor + DeFiTimelock), a soulbound position NFT (PositionNFT), and a CREATE/CREATE2 pool factory (PoolFactory).
 
 **Audit Scope:**
+
 - 12 contracts in scope (see Section 2)
 - Tools used: Slither 0.10.x, manual review, Foundry test suite (227 tests)
 - Time period: 2026-05-10 to 2026-05-17
@@ -81,6 +83,7 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ## 4. Findings
 
 ### F-01 — LendingPoolV1: Interest Accrual Not Applied on Liquidation Debt Comparison
+
 **Severity:** Low  
 **Location:** `contracts/core/LendingPoolV1.sol:liquidate()`  
 **Status:** Acknowledged
@@ -96,6 +99,7 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ---
 
 ### F-02 — PoolFactory: No Ownership Transfer on Deployed Pools
+
 **Severity:** Low  
 **Location:** `contracts/core/PoolFactory.sol:deployPool()`  
 **Status:** Fixed (design decision)
@@ -111,6 +115,7 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ---
 
 ### F-03 — YieldVault: MANAGER_ROLE Can Drain Vault via recallFromLendingPool
+
 **Severity:** Low (Centralization Risk)  
 **Location:** `contracts/vault/YieldVault.sol:recallFromLendingPool()`  
 **Status:** Acknowledged
@@ -126,6 +131,7 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ---
 
 ### F-04 (Informational) — No Upper Bound on tokenList Length
+
 **Location:** `contracts/core/LendingPoolV1.sol:addSupportedToken()`  
 **Description:** The `tokenList` array is unbounded. The health-factor loop iterates over all tokens for every borrow/withdraw/liquidate call. With many tokens, gas cost grows O(n).
 **Recommendation:** Add a `MAX_TOKENS` constant (e.g., 20) and revert if exceeded.
@@ -133,6 +139,7 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ---
 
 ### F-05 (Informational) — PositionNFT mint Silently Skipped on Subsequent Deposits
+
 **Location:** `contracts/core/LendingPoolV1.sol:deposit()`  
 **Description:** The NFT mint is guarded by `positionOf(user) == 0`, so subsequent deposits by the same user do not revert but also do not emit any signal. Callers may be confused when no `PositionMinted` event is emitted.
 **Recommendation:** Document the soulbound, one-per-user semantics clearly in the ABI comments.
@@ -140,6 +147,7 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ---
 
 ### F-06 (Informational) — Governor proposalThreshold is Token Amount, Not Percentage
+
 **Location:** `contracts/governance/DeFiGovernor.sol`  
 **Description:** The proposal threshold is set as an absolute token amount (`1_000_000e18`), not as a fraction of supply. If more DGT is minted (up to 100M cap), the effective threshold percentage decreases.
 **Recommendation:** Consider using `GovernorVotesQuorumFraction` pattern for the threshold too, or document the fixed-amount decision.
@@ -147,6 +155,7 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ---
 
 ### F-07 (Informational) — Flash Loan Fee Not Included in Health Factor
+
 **Location:** `contracts/core/LendingPoolV2.sol:flashLoan()`  
 **Description:** Flash loan fees accumulate in `flashLoanFees[token]` but are counted toward `totalDeposits`, which inflates apparent liquidity and slightly reduces the utilization ratio.
 **Recommendation:** Track fees separately from deposits in the liquidity calculation; low impact for current fee level (max 5%).
@@ -154,6 +163,7 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ---
 
 ### F-08 (Informational) — No Event on positionNFT Configuration
+
 **Location:** `contracts/core/LendingPoolV1.sol:setPositionNFT()`  
 **Description:** `setPositionNFT()` does not emit an event, making off-chain monitoring harder.
 **Recommendation:** Add `event PositionNFTUpdated(address nft)` and emit it.
@@ -204,18 +214,22 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ## 6. Governance Attack Analysis
 
 ### Flash-Loan Voting Attack
+
 **Scenario:** Attacker borrows large DGT position, votes on a proposal, repays in the same block.  
 **Defense:** `ERC20Votes` uses `getPastVotes(account, proposalSnapshot - 1)` — voting power is checkpointed at a past block. Flash-loan borrows and repays within the same block do not affect past checkpoints. **Not possible.**
 
 ### Whale Attack
+
 **Scenario:** Large token holder accumulates >51% of circulating supply and passes malicious proposal.  
 **Defense:** 2-day Timelock gives community time to react and sell/exit before execution. With quorum of 4%, a 51% whale can pass proposals but cannot bypass the delay.
 
 ### Proposal Spam
+
 **Scenario:** Attacker floods governance with garbage proposals to exhaust community attention.  
 **Defense:** 1% proposal threshold (1M DGT) prevents spam from actors without significant stake.
 
 ### Timelock Bypass
+
 **Scenario:** Attacker calls Timelock functions directly without going through Governor.  
 **Defense:** After setup, only `PROPOSER_ROLE` (Governor) can call `schedule()`. Deployer has renounced `DEFAULT_ADMIN_ROLE`. **Bypass not possible.**
 
@@ -224,14 +238,17 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ## 7. Oracle Attack Analysis
 
 ### Price Manipulation (Spot Price)
+
 **Scenario:** Attacker manipulates spot price on a DEX used as oracle.  
 **Defense:** Protocol uses Chainlink AggregatorV3 (volume-weighted, decentralized network of nodes). Chainlink is not a spot-price oracle. Direct manipulation is not economically feasible.
 
 ### Stale Price Attack
+
 **Scenario:** Chainlink feed stops updating (sequencer down, network issue). Attacker borrows against stale high-price collateral.  
 **Defense:** `OracleLib.staleCheckLatestRoundData()` reverts if `block.timestamp - updatedAt > 3 hours`. LendingPool adds an additional 1-hour check. All operations revert during stale periods.
 
 ### Feed Depeg / Price Manipulation
+
 **Scenario:** Chainlink feed reports extreme price for a short time.  
 **Defense:** Chainlink's aggregation from multiple independent data providers prevents single-source manipulation. The 80% liquidation threshold and 5% liquidation bonus provide a buffer against temporary price spikes.
 
@@ -240,6 +257,7 @@ This internal audit covers the full smart contract codebase of the DeFi Super-Ap
 ## 8. Slither Output (Appendix)
 
 Slither was run with the command:
+
 ```bash
 slither contracts/ --config-file slither.config.json \
   --exclude-dependencies \
@@ -276,6 +294,7 @@ All Low and Informational findings are documented above and in this appendix.
 **File:** `contracts/attacks/ReentrancyAttack.sol`
 
 **Vulnerable pattern (VulnerableETHBank):**
+
 ```solidity
 function withdraw() external {
     uint256 bal = balances[msg.sender];
@@ -289,6 +308,7 @@ function withdraw() external {
 **Attack:** `ReentrancyAttacker.attack()` calls `deposit(1 ether)`, then `withdraw()`. On the ETH callback, the attacker re-enters `withdraw()` before `balances[msg.sender] = 0` executes.
 
 **Fix (SecureETHBank):** CEI pattern + `ReentrancyGuard`:
+
 ```solidity
 function withdraw() external nonReentrant {
     uint256 bal = balances[msg.sender];
@@ -308,6 +328,7 @@ function withdraw() external nonReentrant {
 **Tests:** `test/unit/AccessControlAttack.t.sol`
 
 **Vulnerable pattern (VulnerableTreasury):**
+
 ```solidity
 // BUG: no access control
 function sweep(address payable recipient) external {
@@ -319,11 +340,13 @@ function sweep(address payable recipient) external {
 **Attack:** `TreasuryAttacker.attack()` calls `target.sweep(adversary)` — anyone can drain the treasury.
 
 **Test result (before fix):**
+
 ```
 test_vulnerableTreasury_drainedByAnyone() → PASS (adversary receives 10 ether)
 ```
 
 **Fix (SecureTreasury):** `onlyOwner` modifier:
+
 ```solidity
 function sweep(address payable recipient) external onlyOwner {
     ...
@@ -331,6 +354,7 @@ function sweep(address payable recipient) external onlyOwner {
 ```
 
 **Test result (after fix):**
+
 ```
 test_secureTreasury_onlyOwnerCanSweep() → PASS (reverts for adversary)
 test_secureTreasury_ownerCanSweep()     → PASS (owner succeeds)

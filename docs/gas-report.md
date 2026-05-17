@@ -1,4 +1,5 @@
 # Gas Optimization Report
+
 ## DeFi Super-App Protocol
 
 **Toolchain:** Forge (Foundry stable), Solc 0.8.24, optimizer enabled (`runs = 200`)  
@@ -52,6 +53,7 @@ Gas **units** are the same on L1 and L2. The difference is purely in gas **price
 Cost = gas_units × gas_price (gwei) × ETH_price_usd / 1e9.
 
 **Assumptions used:**
+
 - L1 (Ethereum Mainnet) gas price: **20 gwei** (average 2024-2025)
 - L2 (Arbitrum) gas price: **0.1 gwei** (typical mainnet Arbitrum)
 - ETH price: **$3,500**
@@ -68,6 +70,7 @@ Cost = gas_units × gas_price (gwei) × ETH_price_usd / 1e9.
 | `YieldVault.redeem()` median | 64,615 | $4.52 | $0.023 | −99.5% |
 
 **Why Arbitrum Sepolia:**
+
 1. Gas fees < $0.05 per operation vs $3–$9 on L1 — small positions are economically viable.
 2. Inherits Ethereum security via fraud proofs / validity proofs.
 3. EVM-equivalent — no changes to Solidity contracts needed.

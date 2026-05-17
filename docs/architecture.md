@@ -1,4 +1,5 @@
 # Architecture & Design Document
+
 ## DeFi Super-App — Telegram Mini App Protocol
 
 **Network:** Arbitrum Sepolia  
@@ -247,6 +248,7 @@ Implemented in inline assembly:
 ```
 accruedInterest += principal × INTEREST_RATE_BPS × elapsed / (10_000 × SECONDS_PER_YEAR)
 ```
+
 Called on every `borrow`, `repay`, `liquidate` before state changes.
 
 ### YieldVault (ERC4626)
@@ -269,12 +271,14 @@ sharePrice   = totalAssets() / totalSupply()  (WAD precision)
 | PositionNFT owner = LendingPool | Rogue owner could mint/burn NFTs to arbitrary users |
 
 ### What Timelock Controls
+
 - `addSupportedToken` — can list malicious tokens to manipulate health factors
 - `setOracle` — can point to a malicious oracle returning arbitrary prices
 - `mint` (DeFiToken) — can inflate supply (capped at 100M)
 - `upgradeToAndCall` — can replace the LendingPool implementation
 
 ### What Happens if Multisig is Compromised
+
 If the deployer key is compromised before `renounceRole` is called: attacker can grant themselves `PROPOSER_ROLE` on the Timelock and schedule arbitrary calls with 2-day delay. The community has 2 days to notice and cancel via governance. After renouncement, no such risk exists.
 
 ---
@@ -282,36 +286,42 @@ If the deployer key is compromised before `renounceRole` is called: attacker can
 ## 7. Design Decisions Log (ADR)
 
 ### ADR-01: UUPS over Transparent Proxy
+
 - **Context:** Need upgradeability for the lending pool without permanent admin overhead.
 - **Options:** Transparent Proxy, UUPS, Beacon Proxy.
 - **Decision:** UUPS — saves ~2,300 gas per call (no admin check in proxy), upgrade logic in implementation.
 - **Consequences:** Incorrect upgrade can brick the proxy; mitigated by `_disableInitializers()` in constructor.
 
 ### ADR-02: Cross-collateral over Per-pair Pools
+
 - **Context:** Users should be able to deposit multiple tokens as collateral.
 - **Options:** Per-pair isolated pools (Aave v1), shared cross-collateral pool.
 - **Decision:** Cross-collateral — simpler UX; health factor loops over all tokens.
 - **Consequences:** O(n) gas per operation where n = number of supported tokens; acceptable for testnet.
 
 ### ADR-03: Soulbound PositionNFT
+
 - **Context:** ERC-721 required; must be meaningful, not a cosmetic checkbox.
 - **Options:** Transferable receipt NFT, soulbound position NFT.
 - **Decision:** Soulbound — prevents selling "positions" separately from underlying collateral which would enable health factor manipulation.
 - **Consequences:** Cannot be used as collateral in other protocols; NFT marketplaces cannot trade it.
 
 ### ADR-04: Linear Interest Rate
+
 - **Context:** Need a documented interest rate model.
 - **Options:** Linear (constant APR), utilization-based kinked rate (Compound/Aave).
 - **Decision:** Linear 5% APR for simplicity and auditability; can be replaced in V3.
 - **Consequences:** Under-prices risk at high utilization; acceptable for academic scope.
 
 ### ADR-05: Inline Assembly for Health Factor
+
 - **Context:** Health factor computed on every borrow, withdraw, and liquidation.
 - **Options:** Pure Solidity division, inline Yul assembly.
 - **Decision:** Inline assembly to eliminate redundant safety checks on known-safe operands.
 - **Consequences:** Less readable; benchmarked to save ~200 gas per call (see gas-report.md).
 
 ### ADR-06: Governor + Timelock Architecture
+
 - **Context:** Governance required; must prevent flash-loan voting attacks.
 - **Options:** Snapshot off-chain, on-chain Governor without timelock, Governor + Timelock.
 - **Decision:** Governor + TimelockController — ERC20Votes uses past-block checkpoints eliminating flash-loan attacks; 2-day delay allows community reaction before execution.
