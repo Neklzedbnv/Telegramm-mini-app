@@ -92,7 +92,6 @@ contract LendingPoolV2 is LendingPoolV1 {
         if (available < amount) revert InsufficientLiquidity(available, amount);
 
         uint256 fee = (amount * flashLoanFeeBps) / 10_000;
-        uint256 expectedRepayment = amount + fee;
 
         uint256 balanceBefore = IERC20(token).balanceOf(address(this));
 
