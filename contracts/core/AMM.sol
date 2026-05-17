@@ -30,30 +30,16 @@ contract AMM is ReentrancyGuard {
     // ─── Events ───────────────────────────────────────────────────────────────
 
     event Swap(
-        address indexed sender,
-        address indexed tokenIn,
-        uint256 amountIn,
-        address indexed tokenOut,
-        uint256 amountOut
+        address indexed sender, address indexed tokenIn, uint256 amountIn, address indexed tokenOut, uint256 amountOut
     );
 
-    event LiquidityAdded(
-        address indexed provider,
-        uint256 amountA,
-        uint256 amountB,
-        uint256 shares
-    );
+    event LiquidityAdded(address indexed provider, uint256 amountA, uint256 amountB, uint256 shares);
 
-    event LiquidityRemoved(
-        address indexed provider,
-        uint256 amountA,
-        uint256 amountB,
-        uint256 shares
-    );
+    event LiquidityRemoved(address indexed provider, uint256 amountA, uint256 amountB, uint256 shares);
 
     // ─── Constants ────────────────────────────────────────────────────────────
 
-    uint256 public constant FEE_BPS = 30;       // 0.30%
+    uint256 public constant FEE_BPS = 30; // 0.30%
     uint256 public constant FEE_DENOM = 10_000;
     uint256 private constant MINIMUM_LIQUIDITY = 1_000; // burned on first add
 
@@ -194,9 +180,7 @@ contract AMM is ReentrancyGuard {
 
         // ── Checks ──────────────────────────────────────────────────────────
         bool isAtoB = tokenIn == address(tokenA);
-        (uint256 reserveIn, uint256 reserveOut) = isAtoB
-            ? (reserveA, reserveB)
-            : (reserveB, reserveA);
+        (uint256 reserveIn, uint256 reserveOut) = isAtoB ? (reserveA, reserveB) : (reserveB, reserveA);
 
         if (reserveIn == 0 || reserveOut == 0) revert AMM__InsufficientLiquidity();
 

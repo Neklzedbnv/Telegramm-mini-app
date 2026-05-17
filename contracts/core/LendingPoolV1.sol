@@ -391,7 +391,9 @@ contract LendingPoolV1 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Re
         uint256 len = tokenList.length;
         for (uint256 i; i < len;) {
             total += _collateral[user][tokenList[i]];
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 

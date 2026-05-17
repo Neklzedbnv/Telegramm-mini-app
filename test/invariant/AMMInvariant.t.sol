@@ -37,7 +37,7 @@ contract AMMHandler is Test {
         tB.approve(address(amm), amtB);
         try amm.addLiquidity(amtA, amtB) {
             if (ghostK == 0) ghostK = amm.getK();
-        } catch {}
+        } catch { }
         vm.stopPrank();
     }
 
@@ -48,7 +48,7 @@ contract AMMHandler is Test {
         shares = bound(sharesFrac, 1, shares);
 
         vm.prank(actor);
-        try amm.removeLiquidity(shares, 0, 0) {} catch {}
+        try amm.removeLiquidity(shares, 0, 0) { } catch { }
     }
 
     function swap(uint256 actorSeed, bool aToB, uint256 amountIn) external {
@@ -61,7 +61,7 @@ contract AMMHandler is Test {
 
         vm.startPrank(actor);
         MockERC20(tokenIn).approve(address(amm), amountIn);
-        try amm.swap(tokenIn, amountIn, 0) {} catch {}
+        try amm.swap(tokenIn, amountIn, 0) { } catch { }
         vm.stopPrank();
     }
 }

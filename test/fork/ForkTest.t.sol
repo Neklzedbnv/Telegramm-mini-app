@@ -207,7 +207,9 @@ contract ForkTest is Test {
             path,
             user,
             block.timestamp + 300
-        ) returns (uint256[] memory amounts) {
+        ) returns (
+            uint256[] memory amounts
+        ) {
             uint256 wethAfter = IERC20(ARB_SEP_WETH).balanceOf(user);
             assertGt(wethAfter, wethBefore, "WETH balance should increase after swap");
             assertEq(amounts[0], amountIn, "amounts[0] must equal amountIn");
