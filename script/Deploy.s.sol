@@ -96,22 +96,12 @@ contract Deploy is Script {
         governorAddr = address(gov);
         console2.log("DeFiGovernor:            ", governorAddr);
 
-        // Wire: governor gets proposer + canceller; renounce deployer admin
-        timelock.grantRole(timelock.PROPOSER_ROLE(), governorAddr);
-        timelock.grantRole(timelock.CANCELLER_ROLE(), governorAddr);
-        timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
-
-        // Transfer protocol ownership to Timelock so governance controls it
-        LendingPoolV1(lendingPool).transferOwnership(timelockAddr);
-        DeFiToken(governanceToken).transferOwnership(timelockAddr);
-
         // 6. PositionNFT (owner = LendingPool proxy)
         PositionNFT nft = new PositionNFT(lendingPool);
         positionNFTAddr = address(nft);
         console2.log("PositionNFT:             ", positionNFTAddr);
-        // Note: setPositionNFT must be called via governance after timelock owns the pool
 
-        // 7. Mock USDC (for testnet / local only)
+        // 7. Mock USDC + Vault + AMM — must happen BEFORE ownership transfer
         if (useMockOracle) {
             MockERC20 mockUsdc = new MockERC20("USD Coin", "USDC", 6);
             usdc = address(mockUsdc);
@@ -146,6 +136,15 @@ contract Deploy is Script {
             amm.addLiquidity(seedAmount, seedAmount);
             console2.log("AMM seeded with 100k TKNA / 100k TKNB");
         }
+
+        // 10. Wire governance and transfer ownership LAST (after all admin calls)
+        timelock.grantRole(timelock.PROPOSER_ROLE(), governorAddr);
+        timelock.grantRole(timelock.CANCELLER_ROLE(), governorAddr);
+        timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
+
+        // Transfer protocol ownership to Timelock so governance controls it
+        LendingPoolV1(lendingPool).transferOwnership(timelockAddr);
+        DeFiToken(governanceToken).transferOwnership(timelockAddr);
 
         vm.stopBroadcast();
 
