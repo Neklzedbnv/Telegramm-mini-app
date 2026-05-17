@@ -2,7 +2,7 @@ name: Smart Contract CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "contracts/**"
       - "test/**"
@@ -33,7 +33,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Cache Foundry build
         uses: actions/cache@v4
@@ -67,7 +67,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Restore build cache
         uses: actions/cache@v4
@@ -104,7 +104,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Install dependencies
         run: forge install
@@ -126,15 +126,16 @@ jobs:
 
       - name: Check coverage threshold (90%)
         run: |
-          COVERAGE=$(grep -oP '\d+\.\d+(?=%)' coverage-summary.txt | tail -1)
-          echo "Total coverage: $COVERAGE%"
-          python3 -c "
-          cov = float('$COVERAGE')
-          if cov < 90:
-              print(f'Coverage {cov}% below 90% threshold')
-              exit(1)
-          print(f'Coverage {cov}% meets threshold')
-          "
+          # Measure line coverage for production contracts only (excludes scripts, attacks, mocks)
+          COVERAGE=$(
+            grep -E "^\| contracts/(core|vault|oracle|governance)" coverage-summary.txt \
+            | while IFS= read -r line; do
+                echo "$line" | grep -oP '(?<=\s)\d+\.\d+%\s*\(\K\d+/\d+(?=\))' | head -1
+              done \
+            | awk -F/ '{c+=$1; t+=$2} END { printf "%.2f", (t>0 ? c/t*100 : 0) }'
+          )
+          echo "Production contracts coverage: ${COVERAGE}%"
+          awk -v cov="$COVERAGE" 'BEGIN { if (cov+0 < 90) { print "Coverage " cov "% below 90% threshold"; exit 1 } }'
 
   # ─── Fork Tests (optional, requires RPC) ────────────────────────────────────
   fork-tests:
@@ -150,7 +151,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Install dependencies
         run: forge install
@@ -173,7 +174,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Install dependencies
         run: forge install
@@ -209,7 +210,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Install dependencies
         run: forge install
