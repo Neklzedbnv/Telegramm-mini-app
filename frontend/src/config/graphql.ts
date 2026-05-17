@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request'
 
 // Тестовый Endpoint сабграфа (замени на актуальный URL твоего сабграфа в The Graph)
-const SUBGRAPH_URL = 'https://api.studio.thegraph.com/query/v2/lending-pool-subgraph'
+const SUBGRAPH_URL = 'https://api.studio.thegraph.com/query/1753457/lending-pool-subgraph/v0.0.1'
 
 // GraphQL Query для получения последних 5 депозитов пользователя
 export const GET_USER_DEPOSITS = gql`

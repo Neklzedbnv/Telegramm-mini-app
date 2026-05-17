@@ -1,0 +1,61 @@
+specVersion: 0.0.5
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: ethereum
+    name: LendingPoolV1
+    network: arbitrum-sepolia
+    source:
+      address: "0xC047D3248eE6F4D5ba570d8cD8D904C2D3a0A9F9"
+      abi: LendingPoolV1
+      startBlock: 134000000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Deposit
+        - Borrow
+        - Repay
+        - Liquidation
+        - UserPosition
+      abis:
+        - name: LendingPoolV1
+          file: LendingPoolV1/LendingPoolV1.json
+      eventHandlers:
+        - event: Deposited(indexed address,indexed address,uint256)
+          handler: handleDeposited
+        - event: Borrowed(indexed address,indexed address,uint256)
+          handler: handleBorrowed
+        - event: Repaid(indexed address,indexed address,uint256)
+          handler: handleRepaid
+        - event: Liquidated(indexed address,indexed address,indexed address,address,uint256,uint256)
+          handler: handleLiquidated
+      file: LendingPoolV1/LendingPoolV1.wasm
+  - kind: ethereum
+    name: AMM
+    network: arbitrum-sepolia
+    source:
+      address: "0xaE4b7dcF92c69E85B2B203Ac2054D6Bb67533b5B"
+      abi: AMM
+      startBlock: 134000000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Swap
+        - LiquidityAdded
+        - LiquidityRemoved
+        - AMMStats
+      abis:
+        - name: AMM
+          file: AMM/AMM.json
+      eventHandlers:
+        - event: Swap(indexed address,indexed address,uint256,indexed address,uint256)
+          handler: handleSwap
+        - event: LiquidityAdded(indexed address,uint256,uint256,uint256)
+          handler: handleLiquidityAdded
+        - event: LiquidityRemoved(indexed address,uint256,uint256,uint256)
+          handler: handleLiquidityRemoved
+      file: LendingPoolV1/LendingPoolV1.wasm
