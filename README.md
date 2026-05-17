@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Telegramm-mini-app
 
 # DeFi Super-App (Option A) — 4 Week Plan (Production-Grade, Fully Aligned)
@@ -8,6 +7,7 @@
 DeFi Super-App — это production-level децентрализованный протокол, полностью соответствующий требованиям курса Blockchain Technologies 2.
 
 Проект включает:
+
 - Lending Protocol (core primitive, с нуля)
 - ERC-4626 Yield Vault
 - DAO Governance (полный lifecycle)
@@ -21,6 +21,7 @@ DeFi Super-App — это production-level децентрализованный 
 ## Tech Stack
 
 ### Smart Contracts
+
 - Solidity + Foundry
 - OpenZeppelin:
   - ERC20Votes + ERC20Permit
@@ -31,16 +32,19 @@ DeFi Super-App — это production-level децентрализованный 
   - UUPSUpgradeable
 
 ### Infrastructure
+
 - Chainlink (Price Feeds)
 - The Graph (Subgraph)
 
 ### Frontend
+
 - React + Tailwind
 - Telegram Mini App SDK
 - WalletConnect + MetaMask
 - wagmi / viem
 
 ### Deployment
+
 - Arbitrum Sepolia / Optimism Sepolia
 
 ---
@@ -67,6 +71,7 @@ DeFi Super-App — это production-level децентрализованный 
 ### 3. Inline Assembly (Yul)
 
 Используется для:
+
 - оптимизации math операций
 - gas reduction
 
@@ -105,6 +110,7 @@ DeFi Super-App — это production-level децентрализованный 
 - ERC20Votes token
 
 Полный flow:
+
 - propose → vote → queue → execute
 
 ---
@@ -121,6 +127,7 @@ DeFi Super-App — это production-level децентрализованный 
 ## Roles & Responsibilities
 
 ### Абзал — Smart Contracts
+
 - Lending Protocol
 - Liquidation
 - ERC-4626 Vault
@@ -130,6 +137,7 @@ DeFi Super-App — это production-level децентрализованный 
 ---
 
 ### Никита — Infrastructure / Governance
+
 - Chainlink Oracle
 - The Graph
 - DAO (Governor + Timelock)
@@ -139,6 +147,7 @@ DeFi Super-App — это production-level децентрализованный 
 ---
 
 ### Арман — Frontend (TMA)
+
 - Telegram Mini App
 - Wallet (MetaMask + WalletConnect)
 - UI / UX
@@ -153,15 +162,18 @@ DeFi Super-App — это production-level децентрализованный 
 ## Week 1 — Core + Governance + Proxy
 
 **Абзал:**
+
 - ERC20Votes token
 - Governor + Timelock
 
 **Никита:**
+
 - LendingPool (UUPS):
   - deposit / borrow / repay / withdraw
 - Health Factor
 
 **Арман:**
+
 - TMA setup
 - Wallet connection
 
@@ -170,17 +182,20 @@ DeFi Super-App — это production-level децентрализованный 
 ## Week 2 — Security + Oracle + Factory
 
 **Абзал:**
+
 - Chainlink Oracle:
   - price feed
   - stale check
 - Factory (CREATE + CREATE2)
 
 **Никита:**
+
 - liquidation()
 - ReentrancyGuard
 - CEI pattern
 
 **Арман:**
+
 - UI:
   - deposit / borrow / repay
 
@@ -189,11 +204,13 @@ DeFi Super-App — это production-level децентрализованный 
 ## Week 3 — Vault + Testing + Subgraph
 
 **Абзал:**
+
 - Subgraph:
   - ≥4 entities
   - ≥5 queries
 
 **Никита:**
+
 - ERC-4626 Vault
 - Vault → Lending integration
 
@@ -203,6 +220,7 @@ DeFi Super-App — это production-level децентрализованный 
   - ≥5 invariant
 
 **Арман:**
+
 - Dashboard:
   - balances
   - health factor
@@ -213,6 +231,7 @@ DeFi Super-App — это production-level децентрализованный 
 ## Week 4 — Deployment + CI + Demo
 
 **Абзал:**
+
 - L2 deploy + verification
 - Gas report (L1 vs L2)
 - CI:
@@ -221,15 +240,18 @@ DeFi Super-App — это production-level децентрализованный 
   - slither
 
 **Никита:**
+
 - Gas optimization
 - Inline assembly optimization
 
 **Арман:**
+
 - Final UI
 - Error handling
 - Network detection
 
 **Все:**
+
 - End-to-end testing
 - Demo
 
@@ -257,6 +279,7 @@ DeFi Super-App — это production-level децентрализованный 
   - 0 Medium
 
 ### Vulnerability Case Studies
+
 - Reentrancy attack (reproduced + fixed)
 - Access control bug (reproduced + fixed)
 
@@ -348,10 +371,11 @@ Frontend (TMA)
 ## Goal
 
 Сделать:
+
 - Production-grade DeFi protocol  
 - Полное соответствие всем требованиям курса  
 - Готовность к защите и сложному Q&A  
-=======
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -360,69 +384,3 @@ Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
->>>>>>> feat(frontend): implement wagmi core configuration and react-query context integration
-```
