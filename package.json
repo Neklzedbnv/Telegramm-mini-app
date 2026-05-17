@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-query": "^5.100.10",
     "@telegram-apps/sdk-react": "^3.3.9",
     "@web3modal/wagmi": "^5.1.11",

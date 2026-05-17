@@ -24,12 +24,16 @@ export interface DepositRecord {
 
 export async function fetchUserDeposits(userAddress: string): Promise<DepositRecord[]> {
   try {
-    const data = await request<{ deposits: DepositRecord[] }>(
+    // Безопасно типизируем ответ, допуская, что deposits может отсутствовать в объекте данных
+    const data = await request<{ deposits?: DepositRecord[] }>(
       SUBGRAPH_URL, 
       GET_USER_DEPOSITS, 
       { user: userAddress.toLowerCase() }
     )
-    return data.deposits
+    
+    // Защита: если data или data.deposits равен undefined/null, возвращаем чистый пустой массив
+    return data?.deposits || []
+    
   } catch (error) {
     console.error('Ошибка при десериализации логов сабграфа:', error)
     return []
