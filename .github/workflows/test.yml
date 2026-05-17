@@ -18,13 +18,15 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
           submodules: recursive
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
 
       - name: Show Forge version
         run: forge --version
@@ -37,3 +39,19 @@ jobs:
 
       - name: Run Forge tests
         run: forge test -vvv
+        env:
+          FORK_RPC_URL: ${{ secrets.FORK_RPC_URL }}
+
+      - name: Run Forge coverage
+        run: |
+          forge coverage --report summary 2>&1 | tee coverage-summary.txt
+          # Calculate line coverage for production contracts only (excludes scripts, attacks, mocks)
+          COVERAGE=$(
+            grep -E "^\| contracts/(core|vault|oracle|governance)" coverage-summary.txt \
+            | while IFS= read -r line; do
+                echo "$line" | grep -oP '(?<=\s)\d+\.\d+%\s*\(\K\d+/\d+(?=\))' | head -1
+              done \
+            | awk -F/ '{c+=$1; t+=$2} END { printf "%.2f", (t>0 ? c/t*100 : 0) }'
+          )
+          echo "Production contracts coverage: ${COVERAGE}%"
+          awk -v cov="$COVERAGE" 'BEGIN { if (cov+0 < 90) { print "Coverage " cov "% below 90% threshold"; exit 1 } }'

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { mainButton } from '@telegram-apps/sdk-react'
 import { useNetworkCheck } from '../hooks/useNetworkCheck'
 import { useReadContract, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { CONTRACT_ADDRESSES, LENDING_POOL_ABI } from '../config/contracts'
+import { CONTRACT_ADDRESSES, LENDING_POOL_ABI, AMM_ABI } from '../config/contracts'
 import { formatUnits, parseUnits } from 'viem'
 import { useQuery } from '@tanstack/react-query'
 import { fetchUserDeposits } from '../config/graphql'
@@ -96,6 +96,29 @@ export function Dashboard() {
       args: [BigInt(proposalId), support],
     })
   }
+
+  // ТРАНЗАКЦИЯ 4: AMM Swap — tokenA → tokenB
+  const [swapAmount, setSwapAmount] = useState('100')
+  const handleSwap = () => {
+    const amountIn = parseUnits(swapAmount || '0', 18)
+    if (amountIn === 0n) return
+    writeContract({
+      address: CONTRACT_ADDRESSES.AMM,
+      abi: AMM_ABI,
+      functionName: 'swap',
+      args: [CONTRACT_ADDRESSES.TOKEN_A, amountIn, 0n],
+    })
+  }
+
+  // Read AMM reserves from contract
+  const { data: reservesData } = useReadContract({
+    address: CONTRACT_ADDRESSES.AMM,
+    abi: AMM_ABI,
+    functionName: 'getReserves',
+    query: { enabled: !!address && !isWrongNetwork },
+  })
+  const reserveA = reservesData ? formatUnits((reservesData as readonly [bigint, bigint])[0], 18) : '—'
+  const reserveB = reservesData ? formatUnits((reservesData as readonly [bigint, bigint])[1], 18) : '—'
 
   // Синхронизация нативной кнопки Telegram с жизненным циклом транзакции
   useEffect(() => {
@@ -361,6 +384,47 @@ export function Dashboard() {
               </p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* AMM Swap Section */}
+      <div className="bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-slate-800/60 space-y-3.5 shadow-md">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">AMM Swap</h3>
+          <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
+            x·y=k
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="p-2.5 bg-slate-950/40 rounded-xl border border-slate-900/60">
+            <p className="text-slate-500 text-[10px] mb-1">Reserve A (TKNA)</p>
+            <p className="text-slate-200 font-mono font-bold">{parseFloat(reserveA).toLocaleString()}</p>
+          </div>
+          <div className="p-2.5 bg-slate-950/40 rounded-xl border border-slate-900/60">
+            <p className="text-slate-500 text-[10px] mb-1">Reserve B (TKNB)</p>
+            <p className="text-slate-200 font-mono font-bold">{parseFloat(reserveB).toLocaleString()}</p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[10px] text-slate-500">Swap TKNA → TKNB (0.3% fee)</p>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              value={swapAmount}
+              onChange={e => setSwapAmount(e.target.value)}
+              placeholder="Amount TKNA"
+              className="flex-1 px-3 py-2 bg-slate-950/60 border border-slate-800/80 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500/40"
+            />
+            <button
+              onClick={handleSwap}
+              disabled={isPending || isMining}
+              className="px-4 py-2 bg-blue-600/80 hover:bg-blue-600 active:scale-[0.96] text-white rounded-xl text-xs font-bold transition-all disabled:opacity-30"
+            >
+              {isPending || isMining ? '...' : 'Swap'}
+            </button>
+          </div>
         </div>
       </div>
 

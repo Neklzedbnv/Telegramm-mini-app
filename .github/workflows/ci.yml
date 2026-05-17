@@ -1,0 +1,233 @@
+name: Smart Contract CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - "test/**"
+      - "script/**"
+      - "foundry.toml"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - "test/**"
+      - "script/**"
+      - "foundry.toml"
+
+env:
+  FOUNDRY_PROFILE: default
+
+jobs:
+  # ─── Build ──────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Cache Foundry build
+        uses: actions/cache@v4
+        with:
+          path: |
+            out/
+            cache/
+          key: foundry-${{ runner.os }}-${{ hashFiles('foundry.toml', 'contracts/**/*.sol') }}
+          restore-keys: |
+            foundry-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: forge install
+
+      - name: Build contracts
+        run: forge build --sizes
+
+      - name: Check formatting
+        run: forge fmt --check
+
+  # ─── Unit + Fuzz + Invariant Tests ──────────────────────────────────────────
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            out/
+            cache/
+          key: foundry-${{ runner.os }}-${{ hashFiles('foundry.toml', 'contracts/**/*.sol') }}
+          restore-keys: |
+            foundry-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: forge install
+
+      - name: Run unit tests
+        run: forge test --match-path "test/unit/**" -v
+
+      - name: Run fuzz tests
+        run: forge test --match-path "test/fuzz/**" -v
+
+      - name: Run invariant tests
+        run: forge test --match-path "test/invariant/**" -v
+
+  # ─── Coverage ────────────────────────────────────────────────────────────────
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install dependencies
+        run: forge install
+
+      - name: Generate coverage report
+        run: |
+          forge coverage \
+            --match-path "test/unit/**" \
+            --report lcov \
+            --report summary \
+            2>&1 | tee coverage-summary.txt
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          flags: smart-contracts
+          fail_ci_if_error: false
+
+      - name: Check coverage threshold (90%)
+        run: |
+          # Measure line coverage for production contracts only (excludes scripts, attacks, mocks)
+          COVERAGE=$(
+            grep -E "^\| contracts/(core|vault|oracle|governance)" coverage-summary.txt \
+            | while IFS= read -r line; do
+                echo "$line" | grep -oP '(?<=\s)\d+\.\d+%\s*\(\K\d+/\d+(?=\))' | head -1
+              done \
+            | awk -F/ '{c+=$1; t+=$2} END { printf "%.2f", (t>0 ? c/t*100 : 0) }'
+          )
+          echo "Production contracts coverage: ${COVERAGE}%"
+          awk -v cov="$COVERAGE" 'BEGIN { if (cov+0 < 90) { print "Coverage " cov "% below 90% threshold"; exit 1 } }'
+
+  # ─── Fork Tests (optional, requires RPC) ────────────────────────────────────
+  fork-tests:
+    name: Fork Tests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install dependencies
+        run: forge install
+
+      - name: Run fork tests
+        env:
+          FORK_RPC_URL: ${{ secrets.FORK_RPC_URL }}
+        run: forge test --match-path "test/fork/**" -v
+
+  # ─── Static Analysis (Slither) ───────────────────────────────────────────────
+  slither:
+    name: Slither Analysis
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install dependencies
+        run: forge install
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.4.0
+        id: slither
+        with:
+          target: "contracts/"
+          slither-args: >
+            --exclude-dependencies
+            --filter-paths "contracts/mocks/|contracts/attacks/"
+            --checklist
+            --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/
+        continue-on-error: true
+
+      - name: Upload Slither SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: steps.slither.outputs.sarif != ''
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
+
+  # ─── Gas Snapshot ────────────────────────────────────────────────────────────
+  gas-snapshot:
+    name: Gas Snapshot
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install dependencies
+        run: forge install
+
+      - name: Generate gas snapshot
+        run: forge snapshot --match-path "test/unit/**" --snap .gas-snapshot
+
+      - name: Upload gas snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: gas-snapshot
+          path: .gas-snapshot
+
+      - name: Compare with baseline (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main
+          git show origin/main:.gas-snapshot > .gas-snapshot-baseline 2>/dev/null || true
+          if [ -f .gas-snapshot-baseline ]; then
+            forge snapshot --diff .gas-snapshot-baseline --match-path "test/unit/**" || true
+          fi
