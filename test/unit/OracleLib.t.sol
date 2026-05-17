@@ -11,11 +11,7 @@ import "../../contracts/oracle/ChainlinkOracleAdapter.sol";
 contract OracleLibHarness {
     using OracleLib for AggregatorV3Interface;
 
-    function staleCheck(AggregatorV3Interface feed)
-        external
-        view
-        returns (uint80, int256, uint256, uint256, uint80)
-    {
+    function staleCheck(AggregatorV3Interface feed) external view returns (uint80, int256, uint256, uint256, uint80) {
         return feed.staleCheckLatestRoundData();
     }
 
@@ -27,20 +23,16 @@ contract OracleLibHarness {
         return OracleLib.normalizeToWad(answer, dec);
     }
 
-    function computeCreate2(bytes32 salt, bytes32 bytecodeHash, address deployer)
-        external
-        pure
-        returns (address)
-    {
+    function computeCreate2(bytes32 salt, bytes32 bytecodeHash, address deployer) external pure returns (address) {
         return OracleLib.computeCreate2Address(salt, bytecodeHash, deployer);
     }
 }
 
 contract OracleLibTest is Test {
     OracleLibHarness harness;
-    MockV3Aggregator feed8;  // 8 decimals (typical USD feed)
+    MockV3Aggregator feed8; // 8 decimals (typical USD feed)
     MockV3Aggregator feed18; // 18 decimals
-    MockV3Aggregator feed6;  // 6 decimals (atypical)
+    MockV3Aggregator feed6; // 6 decimals (atypical)
 
     int256 constant PRICE_2000_USD = 2000e8; // $2000 in 8-decimal feed format
 

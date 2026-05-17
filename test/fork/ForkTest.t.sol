@@ -23,7 +23,7 @@ contract ForkTest is Test {
 
     address constant ARB_SEP_ETH_USD_FEED = 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165;
     address constant ARB_SEP_USDC = 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d;
-    address constant ARB_SEP_USDC_WHALE = 0x1E7AB0e48d5B0A3B9f5D7B8C7E2c1e95FdB28F02; // may vary
+    address constant ARB_SEP_USDC_WHALE = 0x1E7aB0E48d5b0a3B9f5D7b8C7e2C1e95FdB28f02; // may vary
 
     uint256 forkId;
     bool forkActive;
@@ -69,8 +69,8 @@ contract ForkTest is Test {
 
         // ETH price on testnet should be in a sane range ($100 – $100,000)
         uint256 ethPriceWad = OracleLib.normalizeToWad(answer, dec);
-        assertGt(ethPriceWad, 100e18, "ETH price below $100 — unexpected");
-        assertLt(ethPriceWad, 100_000e18, "ETH price above $100k — unexpected");
+        assertGt(ethPriceWad, 100e18, "ETH price below $100 - unexpected");
+        assertLt(ethPriceWad, 100_000e18, "ETH price above $100k - unexpected");
     }
 
     // ─── Fork Test 2: ChainlinkOracleAdapter Integration ─────────────────────
@@ -120,11 +120,7 @@ contract ForkTest is Test {
         LendingPoolV1 pool = LendingPoolV1(address(proxy));
 
         // Deploy vault
-        YieldVault vault = new YieldVault(
-            IERC20(ARB_SEP_USDC),
-            address(pool),
-            owner
-        );
+        YieldVault vault = new YieldVault(IERC20(ARB_SEP_USDC), address(pool), owner);
         vm.stopPrank();
 
         // Mint test USDC via a deal (Foundry fork cheat)

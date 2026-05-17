@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {AggregatorV3Interface} from "../oracle/interfaces/AggregatorV3Interface.sol";
+import { AggregatorV3Interface } from "../oracle/interfaces/AggregatorV3Interface.sol";
 
 /// @title MockV3Aggregator
 /// @notice Drop-in Chainlink aggregator mock for testing OracleLib and ChainlinkOracleAdapter

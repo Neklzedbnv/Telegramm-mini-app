@@ -57,7 +57,7 @@ contract LendingHandler is Test {
         vm.prank(actor);
         try pool.borrow(address(usdc), amount) {
             totalBorrowed += amount;
-        } catch {}
+        } catch { }
     }
 
     function repay(uint256 actorSeed, uint256 amount) external {
@@ -82,7 +82,7 @@ contract LendingHandler is Test {
         vm.prank(actor);
         try pool.withdraw(address(usdc), amount) {
             totalDeposited -= amount;
-        } catch {}
+        } catch { }
     }
 }
 

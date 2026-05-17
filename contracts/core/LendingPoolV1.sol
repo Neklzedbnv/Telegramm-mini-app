@@ -1,35 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IOracle} from "../interfaces/IOracle.sol";
-import {ILendingPool} from "../interfaces/ILendingPool.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IOracle } from "../interfaces/IOracle.sol";
+import { ILendingPool } from "../interfaces/ILendingPool.sol";
 
 /// @title LendingPoolV1
 /// @notice Production-grade UUPS-upgradeable cross-collateral lending pool
 /// @dev Architecture principles:
 ///      • CEI (Checks-Effects-Interactions) on every state-changing function
 ///      • SafeERC20 for all token transfers
-///      • ReentrancyGuardUpgradeable on all external mutating functions
+///      • ReentrancyGuard on all external mutating functions
 ///      • Custom errors (no string revert messages) for gas efficiency
 ///      • Inline assembly for gas-critical health-factor computation
 ///      • storage packing: booleans and uint96 in same slot where possible
 ///
 /// Upgrade path: This contract is deployed behind an ERC1967Proxy.
 /// The owner can authorize an upgrade to LendingPoolV2 via upgradeToAndCall().
-contract LendingPoolV1 is
-    Initializable,
-    UUPSUpgradeable,
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    ILendingPool
-{
+contract LendingPoolV1 is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard, ILendingPool {
     using SafeERC20 for IERC20;
 
     // ─── Constants ────────────────────────────────────────────────────────────
@@ -97,8 +90,6 @@ contract LendingPoolV1 is
     function initialize(address oracle_, address initialOwner) external initializer {
         if (oracle_ == address(0) || initialOwner == address(0)) revert ZeroAddress();
         __Ownable_init(initialOwner);
-        __UUPSUpgradeable_init();
-        __ReentrancyGuard_init();
         oracle = IOracle(oracle_);
     }
 
@@ -233,8 +224,7 @@ contract LendingPoolV1 is
         // Collateral to seize = debt value * (1 + LIQUIDATION_BONUS%) / collateral price
         uint256 debtValue = _tokenValue(debtToken, repayAmount);
         uint256 collateralPrice = _getPrice(collateralToken);
-        uint256 collateralToSeize =
-            (debtValue * (100 + LIQUIDATION_BONUS) * PRECISION) / (100 * collateralPrice);
+        uint256 collateralToSeize = (debtValue * (100 + LIQUIDATION_BONUS) * PRECISION) / (100 * collateralPrice);
 
         uint256 availableCollateral = _collateral[borrower][collateralToken];
         if (collateralToSeize > availableCollateral) {
@@ -327,7 +317,7 @@ contract LendingPoolV1 is
     // ─── UUPS ─────────────────────────────────────────────────────────────────
 
     /// @dev Only the owner may authorize an upgrade
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner { }
 
     // ─── Version ─────────────────────────────────────────────────────────────
 

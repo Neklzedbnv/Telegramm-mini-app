@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {LendingPoolV1} from "./LendingPoolV1.sol";
-import {IFlashLoanReceiver} from "../interfaces/IFlashLoanReceiver.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { LendingPoolV1 } from "./LendingPoolV1.sol";
+import { IFlashLoanReceiver } from "../interfaces/IFlashLoanReceiver.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title LendingPoolV2
 /// @notice LendingPoolV1 upgraded with flash loan functionality
@@ -84,10 +84,7 @@ contract LendingPoolV2 is LendingPoolV1 {
     /// @param amount   The amount to lend
     /// @param receiver Contract that implements IFlashLoanReceiver
     /// @param params   Arbitrary data forwarded to the receiver
-    function flashLoan(address token, uint256 amount, address receiver, bytes calldata params)
-        external
-        nonReentrant
-    {
+    function flashLoan(address token, uint256 amount, address receiver, bytes calldata params) external nonReentrant {
         if (!supportedTokens[token]) revert TokenNotSupportedForFlashLoan(token);
         if (amount == 0) revert ZeroAmount();
 

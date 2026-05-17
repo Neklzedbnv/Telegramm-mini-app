@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {LendingPoolV1} from "./LendingPoolV1.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {OracleLib} from "../oracle/OracleLib.sol";
+import { LendingPoolV1 } from "./LendingPoolV1.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { OracleLib } from "../oracle/OracleLib.sol";
 
 /// @title PoolFactory
 /// @notice Deploys LendingPoolV1 proxies using both CREATE and CREATE2 (deterministic)
@@ -79,17 +79,14 @@ contract PoolFactory is Ownable {
     /// @param poolOwner Owner of the new pool
     /// @param salt      32-byte unique salt; reverts if already used by this factory
     /// @return pool     The deterministic address of the deployed proxy
-    function deployPoolDeterministic(address oracle, address poolOwner, bytes32 salt)
-        external
-        returns (address pool)
-    {
+    function deployPoolDeterministic(address oracle, address poolOwner, bytes32 salt) external returns (address pool) {
         if (oracle == address(0) || poolOwner == address(0)) revert ZeroAddress();
         if (saltToPool[salt] != address(0)) revert SaltAlreadyUsed(salt);
 
         bytes memory initData = abi.encodeCall(LendingPoolV1.initialize, (oracle, poolOwner));
 
         // Solidity's `new T{salt: s}(...)` syntax compiles to CREATE2
-        ERC1967Proxy proxy = new ERC1967Proxy{salt: salt}(implementation, initData);
+        ERC1967Proxy proxy = new ERC1967Proxy{ salt: salt }(implementation, initData);
         pool = address(proxy);
 
         saltToPool[salt] = pool;
@@ -107,13 +104,10 @@ contract PoolFactory is Ownable {
     /// @param poolOwner The owner that will be passed to initialize()
     /// @param salt      The CREATE2 salt
     /// @return predicted The deterministic future address
-    function predictAddress(address oracle, address poolOwner, bytes32 salt)
-        external
-        view
-        returns (address predicted)
-    {
+    function predictAddress(address oracle, address poolOwner, bytes32 salt) external view returns (address predicted) {
         bytes memory initData = abi.encodeCall(LendingPoolV1.initialize, (oracle, poolOwner));
-        bytes memory proxyBytecode = abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, initData));
+        bytes memory proxyBytecode =
+            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, initData));
         bytes32 bytecodeHash = keccak256(proxyBytecode);
 
         // Use OracleLib's assembly-optimized CREATE2 address computation

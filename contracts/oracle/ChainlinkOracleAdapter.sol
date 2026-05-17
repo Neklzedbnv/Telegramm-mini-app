@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {OracleLib} from "./OracleLib.sol";
-import {AggregatorV3Interface} from "./interfaces/AggregatorV3Interface.sol";
-import {IOracle} from "../interfaces/IOracle.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import { OracleLib } from "./OracleLib.sol";
+import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
+import { IOracle } from "../interfaces/IOracle.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title ChainlinkOracleAdapter
 /// @notice Adapts Chainlink price feeds to the IOracle interface used by LendingPoolV1
@@ -27,7 +27,7 @@ contract ChainlinkOracleAdapter is IOracle, Ownable {
 
     // ─── Constructor ─────────────────────────────────────────────────────────
 
-    constructor(address initialOwner) Ownable(initialOwner) {}
+    constructor(address initialOwner) Ownable(initialOwner) { }
 
     // ─── Admin ────────────────────────────────────────────────────────────────
 

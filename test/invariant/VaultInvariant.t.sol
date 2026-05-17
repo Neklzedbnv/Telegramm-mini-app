@@ -89,7 +89,7 @@ contract VaultInvariantTest is Test {
         selectors[0] = VaultHandler.deposit.selector;
         selectors[1] = VaultHandler.redeem.selector;
         selectors[2] = VaultHandler.accrueYield.selector;
-        targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
+        targetSelector(FuzzSelector({ addr: address(handler), selectors: selectors }));
     }
 
     // ─── Invariant I1 ─────────────────────────────────────────────────────────
@@ -105,8 +105,7 @@ contract VaultInvariantTest is Test {
     // ─── Invariant I2 ─────────────────────────────────────────────────────────
     /// @notice totalAssets() always equals the sum of its three components
     function invariant_I2_totalAssets_equalsComponents() public view {
-        uint256 expected =
-            asset.balanceOf(address(vault)) + vault.accruedYield() + vault.deployedAssets();
+        uint256 expected = asset.balanceOf(address(vault)) + vault.accruedYield() + vault.deployedAssets();
         assertEq(vault.totalAssets(), expected);
     }
 

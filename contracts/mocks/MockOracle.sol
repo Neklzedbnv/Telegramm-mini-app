@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IOracle} from "../interfaces/IOracle.sol";
+import { IOracle } from "../interfaces/IOracle.sol";
 
 /// @title MockOracle
 /// @notice Configurable price oracle for unit / invariant testing

@@ -41,8 +41,10 @@ contract Verify is Script {
                     "forge verify-contract ",
                     vm.toString(impl),
                     " contracts/core/LendingPoolV1.sol:LendingPoolV1",
-                    " --chain-id ", vm.toString(chainId),
-                    " --etherscan-api-key ", apiKey
+                    " --chain-id ",
+                    vm.toString(chainId),
+                    " --etherscan-api-key ",
+                    apiKey
                 )
             );
         }
@@ -54,8 +56,10 @@ contract Verify is Script {
                     "forge verify-contract ",
                     vm.toString(proxy),
                     " lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy",
-                    " --chain-id ", vm.toString(chainId),
-                    " --etherscan-api-key ", apiKey
+                    " --chain-id ",
+                    vm.toString(chainId),
+                    " --etherscan-api-key ",
+                    apiKey
                 )
             );
         }
@@ -67,8 +71,10 @@ contract Verify is Script {
                     "forge verify-contract ",
                     vm.toString(factory),
                     " contracts/core/PoolFactory.sol:PoolFactory",
-                    " --chain-id ", vm.toString(chainId),
-                    " --etherscan-api-key ", apiKey
+                    " --chain-id ",
+                    vm.toString(chainId),
+                    " --etherscan-api-key ",
+                    apiKey
                 )
             );
         }
@@ -80,8 +86,10 @@ contract Verify is Script {
                     "forge verify-contract ",
                     vm.toString(vault),
                     " contracts/vault/YieldVault.sol:YieldVault",
-                    " --chain-id ", vm.toString(chainId),
-                    " --etherscan-api-key ", apiKey
+                    " --chain-id ",
+                    vm.toString(chainId),
+                    " --etherscan-api-key ",
+                    apiKey
                 )
             );
         }
@@ -93,8 +101,10 @@ contract Verify is Script {
                     "forge verify-contract ",
                     vm.toString(govToken),
                     " contracts/governance/DeFiToken.sol:DeFiToken",
-                    " --chain-id ", vm.toString(chainId),
-                    " --etherscan-api-key ", apiKey
+                    " --chain-id ",
+                    vm.toString(chainId),
+                    " --etherscan-api-key ",
+                    apiKey
                 )
             );
         }
@@ -106,8 +116,10 @@ contract Verify is Script {
                     "forge verify-contract ",
                     vm.toString(oracle),
                     " contracts/oracle/ChainlinkOracleAdapter.sol:ChainlinkOracleAdapter",
-                    " --chain-id ", vm.toString(chainId),
-                    " --etherscan-api-key ", apiKey
+                    " --chain-id ",
+                    vm.toString(chainId),
+                    " --etherscan-api-key ",
+                    apiKey
                 )
             );
         }

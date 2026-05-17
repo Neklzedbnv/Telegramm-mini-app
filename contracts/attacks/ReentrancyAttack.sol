@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║              SECURITY DEMONSTRATION CONTRACTS                ║
@@ -36,7 +36,7 @@ contract VulnerableETHBank {
         require(amount > 0, "nothing to withdraw");
 
         // INTERACTION before EFFECT ← THE BUG
-        (bool ok,) = msg.sender.call{value: amount}("");
+        (bool ok,) = msg.sender.call{ value: amount }("");
         require(ok, "transfer failed");
 
         // EFFECT after INTERACTION ← too late, attacker already re-entered
@@ -45,7 +45,7 @@ contract VulnerableETHBank {
         emit Withdrawn(msg.sender, amount);
     }
 
-    receive() external payable {}
+    receive() external payable { }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,12 +72,12 @@ contract ReentrancyAttacker {
     /// @notice Fund, attack, and collect. msg.value is the initial deposit.
     function attack() external payable {
         require(msg.value > 0, "need ETH to deposit first");
-        target.deposit{value: msg.value}();
+        target.deposit{ value: msg.value }();
         target.withdraw();
         stolenAmount = address(this).balance;
         emit AttackExecuted(stolenAmount);
         // Return stolen funds to caller for demonstration
-        (bool ok,) = msg.sender.call{value: stolenAmount}("");
+        (bool ok,) = msg.sender.call{ value: stolenAmount }("");
         require(ok, "return failed");
         stolenAmount = 0;
     }
@@ -125,11 +125,11 @@ contract SecureETHBank is ReentrancyGuard {
         balances[msg.sender] = 0;
 
         // INTERACTION last — balance already zeroed, re-entry cannot drain twice
-        (bool ok,) = msg.sender.call{value: amount}("");
+        (bool ok,) = msg.sender.call{ value: amount }("");
         if (!ok) revert TransferFailed();
 
         emit Withdrawn(msg.sender, amount);
     }
 
-    receive() external payable {}
+    receive() external payable { }
 }
