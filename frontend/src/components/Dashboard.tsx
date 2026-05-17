@@ -570,27 +570,42 @@ export function Dashboard() {
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">История операций</h3>
           <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">The Graph</span>
         </div>
-        <div className="space-y-2 max-h-[180px] overflow-y-auto">
-          {depositHistory && depositHistory.length > 0 ? (
-            depositHistory.map((tx) => (
+        <div className="space-y-2 max-h-[280px] overflow-y-auto">
+          {(() => {
+            const h = depositHistory
+            if (!h) return <div className="py-6 text-center border border-dashed border-slate-800/60 rounded-xl"><p className="text-xs text-slate-400">Загрузка...</p></div>
+            const rows = [
+              ...h.deposits.map(t => ({ ...t, type: 'Deposit',  color: 'text-emerald-400', icon: '↓', decimals: 6  })),
+              ...h.borrows .map(t => ({ ...t, type: 'Borrow',   color: 'text-orange-400',  icon: '↗', decimals: 6  })),
+              ...h.repays  .map(t => ({ ...t, type: 'Repay',    color: 'text-blue-400',    icon: '↙', decimals: 6  })),
+              ...h.swaps   .map(t => ({ id: t.id, type: 'Swap', color: 'text-purple-400',  icon: '⇄', amount: t.amountIn, decimals: 18, blockTimestamp: t.blockTimestamp, transactionHash: t.transactionHash, token: t.tokenIn })),
+            ].sort((a, b) => Number(b.blockTimestamp) - Number(a.blockTimestamp)).slice(0, 15)
+
+            if (rows.length === 0) return (
+              <div className="py-6 text-center border border-dashed border-slate-800/60 rounded-xl">
+                <p className="text-xs text-slate-400">История пуста</p>
+                <p className="text-[10px] text-slate-500 mt-1">Появится после синхронизации субграфа</p>
+              </div>
+            )
+            return rows.map(tx => (
               <div key={tx.id} className="p-3 bg-slate-950/40 rounded-xl border border-slate-900/60 flex items-center justify-between text-xs">
                 <div className="space-y-0.5">
-                  <p className="text-emerald-400 font-bold flex items-center gap-1"><span>↓</span> Deposit</p>
+                  <p className={`${tx.color} font-bold`}>{tx.icon} {tx.type}</p>
                   <p className="text-[10px] text-slate-500 font-mono">
-                    {new Date(parseInt(tx.timestamp) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(Number(tx.blockTimestamp) * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
-                <p className="text-slate-100 font-black">
-                  {parseFloat(formatUnits(BigInt(tx.amount), 6)).toFixed(2)} <span className="text-[10px] text-blue-400">USDC</span>
-                </p>
+                <a href={`https://sepolia.arbiscan.io/tx/${tx.transactionHash}`} target="_blank" rel="noreferrer"
+                  className="text-right group">
+                  <p className="text-slate-100 font-black group-hover:text-white">
+                    {parseFloat(formatUnits(BigInt(tx.amount), tx.decimals)).toFixed(2)}
+                    <span className="text-[10px] text-slate-400 ml-1">{tx.decimals === 6 ? 'USDC' : 'TKNA'}</span>
+                  </p>
+                  <p className="text-[9px] text-slate-600 group-hover:text-blue-400 transition-colors">↗ explorer</p>
+                </a>
               </div>
             ))
-          ) : (
-            <div className="py-6 text-center border border-dashed border-slate-800/60 rounded-xl">
-              <p className="text-xs text-slate-400">История пуста</p>
-              <p className="text-[10px] text-slate-500 mt-1">Появится после синхронизации субграфа</p>
-            </div>
-          )}
+          })()}
         </div>
       </div>
 

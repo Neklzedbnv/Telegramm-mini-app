@@ -5,12 +5,36 @@ const SUBGRAPH_URL = 'https://api.studio.thegraph.com/query/1753457/lending-pool
 
 // GraphQL Query для получения последних 5 депозитов пользователя
 export const GET_USER_DEPOSITS = gql`
-  query GetUserDeposits($user: String!) {
-    deposits(first: 5, orderBy: timestamp, orderDirection: desc, where: { user: $user }) {
+  query GetUserDeposits($user: Bytes!) {
+    deposits(first: 5, orderBy: blockTimestamp, orderDirection: desc, where: { user: $user }) {
       id
       amount
-      timestamp
-      asset
+      token
+      blockTimestamp
+      transactionHash
+    }
+    borrows(first: 5, orderBy: blockTimestamp, orderDirection: desc, where: { user: $user }) {
+      id
+      amount
+      token
+      blockTimestamp
+      transactionHash
+    }
+    repays(first: 5, orderBy: blockTimestamp, orderDirection: desc, where: { user: $user }) {
+      id
+      amount
+      token
+      blockTimestamp
+      transactionHash
+    }
+    swaps(first: 5, orderBy: blockTimestamp, orderDirection: desc, where: { sender: $user }) {
+      id
+      amountIn
+      amountOut
+      tokenIn
+      tokenOut
+      blockTimestamp
+      transactionHash
     }
   }
 `
@@ -18,24 +42,45 @@ export const GET_USER_DEPOSITS = gql`
 export interface DepositRecord {
   id: string
   amount: string
-  timestamp: string
-  asset: string
+  token: string
+  blockTimestamp: string
+  transactionHash: string
 }
 
-export async function fetchUserDeposits(userAddress: string): Promise<DepositRecord[]> {
+export interface BorrowRecord extends DepositRecord {}
+export interface RepayRecord extends DepositRecord {}
+export interface SwapRecord {
+  id: string
+  amountIn: string
+  amountOut: string
+  tokenIn: string
+  tokenOut: string
+  blockTimestamp: string
+  transactionHash: string
+}
+
+export interface UserHistory {
+  deposits: DepositRecord[]
+  borrows: BorrowRecord[]
+  repays: RepayRecord[]
+  swaps: SwapRecord[]
+}
+
+export async function fetchUserDeposits(userAddress: string): Promise<UserHistory> {
   try {
-    // Безопасно типизируем ответ, допуская, что deposits может отсутствовать в объекте данных
-    const data = await request<{ deposits?: DepositRecord[] }>(
-      SUBGRAPH_URL, 
-      GET_USER_DEPOSITS, 
+    const data = await request<UserHistory>(
+      SUBGRAPH_URL,
+      GET_USER_DEPOSITS,
       { user: userAddress.toLowerCase() }
     )
-    
-    // Защита: если data или data.deposits равен undefined/null, возвращаем чистый пустой массив
-    return data?.deposits || []
-    
+    return {
+      deposits: data?.deposits || [],
+      borrows:  data?.borrows  || [],
+      repays:   data?.repays   || [],
+      swaps:    data?.swaps    || [],
+    }
   } catch (error) {
     console.error('Ошибка при десериализации логов сабграфа:', error)
-    return []
+    return { deposits: [], borrows: [], repays: [], swaps: [] }
   }
 }
