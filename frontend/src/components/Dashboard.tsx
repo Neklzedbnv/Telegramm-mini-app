@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { mainButton } from '@telegram-apps/sdk-react'
 import { useNetworkCheck } from '../hooks/useNetworkCheck'
 import { useReadContract, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { CONTRACT_ADDRESSES, LENDING_POOL_ABI, AMM_ABI } from '../config/contracts'
+import { CONTRACT_ADDRESSES, LENDING_POOL_ABI, AMM_ABI, DEFI_TOKEN_ABI, GOVERNOR_ABI } from '../config/contracts'
 import { formatUnits, parseUnits } from 'viem'
 import { useQuery } from '@tanstack/react-query'
 import { fetchUserDeposits } from '../config/graphql'
@@ -45,10 +45,78 @@ export function Dashboard() {
   const borrowed = contractFields ? parseFloat(formatUnits(contractFields[1], 18)).toFixed(2) : "0.00"
   const healthFactor = contractFields ? parseFloat(formatUnits(contractFields[5], 18)) : 0.00
 
-  const [proposals] = useState([
-    { id: 1, title: "PIP-01: Повысить LTV для коллатерала ETH до 80%", state: "Active" },
-    { id: 2, title: "PIP-02: Интеграция Chainlink оракула для Arbitrum Sepolia", state: "Executed" }
-  ])
+  // Читаем voting power и delegate из DeFiToken (ERC20Votes)
+  const { data: votingPower } = useReadContract({
+    address: CONTRACT_ADDRESSES.DEFI_TOKEN,
+    abi: DEFI_TOKEN_ABI,
+    functionName: 'getVotes',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && !isWrongNetwork },
+  })
+
+  const { data: delegateAddress } = useReadContract({
+    address: CONTRACT_ADDRESSES.DEFI_TOKEN,
+    abi: DEFI_TOKEN_ABI,
+    functionName: 'delegates',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && !isWrongNetwork },
+  })
+
+  // Читаем реальное состояние пропозалов из Governor
+  const { data: proposal1StateRaw } = useReadContract({
+    address: CONTRACT_ADDRESSES.GOVERNOR,
+    abi: GOVERNOR_ABI,
+    functionName: 'state',
+    args: [BigInt(1)],
+    query: { enabled: !isWrongNetwork },
+  })
+
+  const { data: proposal2StateRaw } = useReadContract({
+    address: CONTRACT_ADDRESSES.GOVERNOR,
+    abi: GOVERNOR_ABI,
+    functionName: 'state',
+    args: [BigInt(2)],
+    query: { enabled: !isWrongNetwork },
+  })
+
+  const PROPOSAL_STATES = ['Pending', 'Active', 'Canceled', 'Defeated', 'Succeeded', 'Queued', 'Expired', 'Executed']
+
+  const proposals = [
+    {
+      id: 1,
+      title: "PIP-01: Повысить LTV для коллатерала ETH до 80%",
+      state: proposal1StateRaw !== undefined ? PROPOSAL_STATES[Number(proposal1StateRaw)] : 'Active'
+    },
+    {
+      id: 2,
+      title: "PIP-02: Интеграция Chainlink оракула для Arbitrum Sepolia",
+      state: proposal2StateRaw !== undefined ? PROPOSAL_STATES[Number(proposal2StateRaw)] : 'Executed'
+    },
+  ]
+
+  const getStateBadgeStyle = (state: string): string => {
+    const styles: Record<string, string> = {
+      Active:    'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-sm shadow-blue-500/5',
+      Pending:   'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
+      Succeeded: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+      Queued:    'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+      Executed:  'bg-slate-800 text-slate-300 border border-slate-600',
+      Defeated:  'bg-rose-500/10 text-rose-400 border border-rose-500/20',
+      Expired:   'bg-orange-500/10 text-orange-400 border border-orange-500/20',
+      Canceled:  'bg-slate-800 text-slate-500 border border-slate-700',
+    }
+    return styles[state] ?? 'bg-slate-800 text-slate-400 border border-slate-700'
+  }
+
+  const formattedVotingPower = votingPower !== undefined
+    ? parseFloat(formatUnits(votingPower as bigint, 18)).toFixed(2)
+    : '—'
+
+  const formattedDelegate = delegateAddress
+    ? (delegateAddress as string).toLowerCase() === address?.toLowerCase()
+      ? 'Self'
+      : `${(delegateAddress as string).slice(0, 6)}...${(delegateAddress as string).slice(-4)}`
+    : '—'
 
   // ТРАНЗАКЦИЯ 1: Функция для отправки депозита (привязана к Telegram MainButton)
   const handleDeposit = () => {
@@ -261,6 +329,22 @@ export function Dashboard() {
         </div>
       </div>
 
+      {/* Voting Power & Delegate */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-slate-900/50 backdrop-blur-md p-4 rounded-2xl border border-slate-800/60 space-y-1 shadow-md">
+          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Voting Power</span>
+          <p className="text-xl font-black text-white tracking-tight">
+            {formattedVotingPower} <span className="text-xs text-blue-400 font-medium">DGT</span>
+          </p>
+        </div>
+        <div className="bg-slate-900/50 backdrop-blur-md p-4 rounded-2xl border border-slate-800/60 space-y-1 shadow-md">
+          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Delegate</span>
+          <p className="text-xl font-black text-white tracking-tight font-mono">
+            {formattedDelegate}
+          </p>
+        </div>
+      </div>
+
       {/* Основные DeFi показатели (Total Supplied & Total Borrowed) */}
       <div className="grid grid-cols-2 gap-3">
         
@@ -310,11 +394,7 @@ export function Dashboard() {
             <div key={prop.id} className="p-3 bg-slate-950/40 rounded-xl border border-slate-900 flex flex-col space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <p className="text-xs font-semibold text-slate-200 leading-relaxed">{prop.title}</p>
-                <span className={`text-[9px] px-2 py-0.5 font-bold rounded-md shrink-0 ${
-                  prop.state === 'Active' 
-                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-sm shadow-blue-500/5' 
-                    : 'bg-slate-800 text-slate-400'
-                }`}>
+                <span className={`text-[9px] px-2 py-0.5 font-bold rounded-md shrink-0 ${getStateBadgeStyle(prop.state)}`}>
                   {prop.state}
                 </span>
               </div>
