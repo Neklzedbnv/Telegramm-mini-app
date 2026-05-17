@@ -9,6 +9,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IOracle } from "../interfaces/IOracle.sol";
 import { ILendingPool } from "../interfaces/ILendingPool.sol";
+import { PositionNFT } from "../tokens/PositionNFT.sol";
 
 /// @title LendingPoolV1
 /// @notice Production-grade UUPS-upgradeable cross-collateral lending pool
@@ -46,13 +47,27 @@ contract LendingPoolV1 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Re
 
     // ─── State ────────────────────────────────────────────────────────────────
 
+    /// @notice Annual interest rate (in basis points, e.g. 500 = 5% APR)
+    uint256 public constant INTEREST_RATE_BPS = 500;
+    /// @notice Seconds in a year (365 days)
+    uint256 public constant SECONDS_PER_YEAR = 365 days;
+
     IOracle public oracle;
+
+    /// @notice Optional position NFT contract; address(0) disables NFT minting
+    PositionNFT public positionNFT;
 
     /// @dev user → token → collateral balance
     mapping(address => mapping(address => uint256)) private _collateral;
 
-    /// @dev user → token → debt balance
+    /// @dev user → token → debt balance (principal only; accrued interest tracked separately)
     mapping(address => mapping(address => uint256)) private _debt;
+
+    /// @dev user → token → accrued interest not yet repaid
+    mapping(address => mapping(address => uint256)) private _accruedInterest;
+
+    /// @dev user → token → last interest accrual timestamp
+    mapping(address => mapping(address => uint256)) private _lastAccrual;
 
     /// @dev token → total collateral deposited
     mapping(address => uint256) public totalDeposits;
@@ -106,6 +121,12 @@ contract LendingPoolV1 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Re
         }
     }
 
+    /// @notice Set the PositionNFT contract (can be called once after deployment)
+    function setPositionNFT(address nft_) external onlyOwner {
+        if (nft_ == address(0)) revert ZeroAddress();
+        positionNFT = PositionNFT(nft_);
+    }
+
     /// @notice Update the price oracle
     function setOracle(address oracle_) external onlyOwner {
         if (oracle_ == address(0)) revert ZeroAddress();
@@ -123,11 +144,19 @@ contract LendingPoolV1 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Re
         if (amount == 0) revert ZeroAmount();
 
         // Effects first (CEI)
+        bool isFirstDeposit = _collateral[msg.sender][token] == 0 && _totalCollateral(msg.sender) == 0;
         _collateral[msg.sender][token] += amount;
         totalDeposits[token] += amount;
 
         // Interaction last
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+
+        // Mint position NFT on first deposit (if NFT contract configured)
+        if (isFirstDeposit && address(positionNFT) != address(0)) {
+            if (positionNFT.positionOf(msg.sender) == 0) {
+                positionNFT.mint(msg.sender);
+            }
+        }
 
         emit Deposited(msg.sender, token, amount);
     }
@@ -142,6 +171,9 @@ contract LendingPoolV1 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Re
 
         uint256 available = totalDeposits[token] - totalBorrows[token];
         if (available < amount) revert InsufficientLiquidity(available, amount);
+
+        // Accrue any existing interest before adding new principal
+        _accrueInterest(msg.sender, token);
 
         // Tentatively apply borrow to state
         _debt[msg.sender][token] += amount;
@@ -164,8 +196,20 @@ contract LendingPoolV1 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Re
         if (!supportedTokens[token]) revert TokenNotSupported(token);
         if (amount == 0) revert ZeroAmount();
 
+        // Accrue interest first so repayment covers it
+        _accrueInterest(msg.sender, token);
+
+        // Repay accrued interest first, then principal
+        uint256 interest = _accruedInterest[msg.sender][token];
+        uint256 remaining = amount;
+        if (interest > 0) {
+            uint256 interestPaid = remaining > interest ? interest : remaining;
+            _accruedInterest[msg.sender][token] -= interestPaid;
+            remaining -= interestPaid;
+        }
+
         uint256 debt = _debt[msg.sender][token];
-        uint256 repayAmount = amount > debt ? debt : amount;
+        uint256 repayAmount = remaining > debt ? debt : remaining;
 
         // Effects
         _debt[msg.sender][token] -= repayAmount;
@@ -311,6 +355,44 @@ contract LendingPoolV1 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Re
         // Staleness check: compatible with both MockOracle and ChainlinkOracleAdapter
         if (updatedAt == 0 || updatedAt > block.timestamp) revert InvalidPrice();
         if (block.timestamp - updatedAt > STALE_PRICE_DELAY) revert InvalidPrice();
+    }
+
+    /// @notice Returns the outstanding interest owed by a user on a token
+    function getAccruedInterest(address user, address token) external view returns (uint256) {
+        uint256 principal = _debt[user][token];
+        if (principal == 0) return _accruedInterest[user][token];
+        uint256 elapsed = block.timestamp - _lastAccrual[user][token];
+        uint256 newInterest = (principal * INTEREST_RATE_BPS * elapsed) / (10_000 * SECONDS_PER_YEAR);
+        return _accruedInterest[user][token] + newInterest;
+    }
+
+    /// @dev Materialises interest for (user, token) into _accruedInterest storage.
+    ///      Called before every borrow/repay/liquidate to keep debt current.
+    function _accrueInterest(address user, address token) internal {
+        uint256 principal = _debt[user][token];
+        if (principal == 0) {
+            _lastAccrual[user][token] = block.timestamp;
+            return;
+        }
+        uint256 last = _lastAccrual[user][token];
+        if (last == 0) {
+            _lastAccrual[user][token] = block.timestamp;
+            return;
+        }
+        uint256 elapsed = block.timestamp - last;
+        if (elapsed == 0) return;
+        uint256 interest = (principal * INTEREST_RATE_BPS * elapsed) / (10_000 * SECONDS_PER_YEAR);
+        _accruedInterest[user][token] += interest;
+        _lastAccrual[user][token] = block.timestamp;
+    }
+
+    /// @dev Returns total collateral value across all tokens for a user (used for first-deposit check)
+    function _totalCollateral(address user) internal view returns (uint256 total) {
+        uint256 len = tokenList.length;
+        for (uint256 i; i < len;) {
+            total += _collateral[user][tokenList[i]];
+            unchecked { ++i; }
+        }
     }
 
     // ─── UUPS ─────────────────────────────────────────────────────────────────

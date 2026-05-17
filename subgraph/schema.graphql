@@ -1,0 +1,51 @@
+type Deposit @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes! # address
+  token: Bytes! # address
+  amount: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Borrow @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes!
+  token: Bytes!
+  amount: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Repay @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes!
+  token: Bytes!
+  amount: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Liquidation @entity(immutable: true) {
+  id: Bytes!
+  liquidator: Bytes!
+  borrower: Bytes!
+  collateralToken: Bytes!
+  debtToken: Bytes!
+  debtRepaid: BigInt!
+  collateralSeized: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type UserPosition @entity {
+  id: Bytes! # user address
+  totalDeposited: BigInt!
+  totalBorrowed: BigInt!
+  totalRepaid: BigInt!
+  liquidationCount: Int!
+  lastActivityTimestamp: BigInt!
+}

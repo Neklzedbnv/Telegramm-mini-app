@@ -7,9 +7,13 @@ import "../contracts/core/LendingPoolV1.sol";
 import "../contracts/core/PoolFactory.sol";
 import "../contracts/vault/YieldVault.sol";
 import "../contracts/governance/DeFiToken.sol";
+import "../contracts/governance/DeFiTimelock.sol";
+import "../contracts/governance/DeFiGovernor.sol";
+import "../contracts/tokens/PositionNFT.sol";
 import "../contracts/oracle/ChainlinkOracleAdapter.sol";
 import "../contracts/mocks/MockOracle.sol";
 import "../contracts/mocks/MockERC20.sol";
+import "@openzeppelin/contracts/governance/utils/IVotes.sol";
 
 /// @title Deploy
 /// @notice Full protocol deployment script for Arbitrum Sepolia (or local Anvil fork)
@@ -32,6 +36,9 @@ contract Deploy is Script {
     address public factory;
     address public vault;
     address public governanceToken;
+    address public timelockAddr;
+    address public governorAddr;
+    address public positionNFTAddr;
     address public usdc;
 
     uint256 constant DEFAULT_INITIAL_SUPPLY = 10_000_000e18;
@@ -73,7 +80,34 @@ contract Deploy is Script {
         governanceToken = address(new DeFiToken(deployer, initialSupply));
         console2.log("DeFiToken (DGT):         ", governanceToken);
 
-        // 5. Mock USDC (for testnet / local only)
+        // 5. Timelock + Governor
+        address[] memory proposers = new address[](0);
+        address[] memory executors = new address[](1);
+        executors[0] = address(0); // anyone can execute after delay
+        DeFiTimelock timelock = new DeFiTimelock(2 days, proposers, executors, deployer);
+        timelockAddr = address(timelock);
+        console2.log("DeFiTimelock:            ", timelockAddr);
+
+        DeFiGovernor gov = new DeFiGovernor(IVotes(governanceToken), timelock);
+        governorAddr = address(gov);
+        console2.log("DeFiGovernor:            ", governorAddr);
+
+        // Wire: governor gets proposer + canceller; renounce deployer admin
+        timelock.grantRole(timelock.PROPOSER_ROLE(), governorAddr);
+        timelock.grantRole(timelock.CANCELLER_ROLE(), governorAddr);
+        timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
+
+        // Transfer protocol ownership to Timelock so governance controls it
+        LendingPoolV1(lendingPool).transferOwnership(timelockAddr);
+        DeFiToken(governanceToken).transferOwnership(timelockAddr);
+
+        // 6. PositionNFT (owner = LendingPool proxy)
+        PositionNFT nft = new PositionNFT(lendingPool);
+        positionNFTAddr = address(nft);
+        console2.log("PositionNFT:             ", positionNFTAddr);
+        // Note: setPositionNFT must be called via governance after timelock owns the pool
+
+        // 7. Mock USDC (for testnet / local only)
         if (useMockOracle) {
             MockERC20 mockUsdc = new MockERC20("USD Coin", "USDC", 6);
             usdc = address(mockUsdc);
@@ -83,7 +117,7 @@ contract Deploy is Script {
             LendingPoolV1(lendingPool).addSupportedToken(usdc);
             mockUsdc.mint(deployer, 1_000_000e6);
 
-            // 6. YieldVault
+            // 8. YieldVault
             vault = address(new YieldVault(IERC20(usdc), lendingPool, deployer));
             console2.log("YieldVault:              ", vault);
         }
