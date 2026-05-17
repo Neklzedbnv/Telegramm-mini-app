@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { mainButton } from '@telegram-apps/sdk-react'
 import { useNetworkCheck } from '../hooks/useNetworkCheck'
-import { useReadContract, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useReadContract, useReadContracts, usePublicClient, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import {
   CONTRACT_ADDRESSES,
   LENDING_POOL_ABI,
@@ -9,9 +9,9 @@ import {
   DEFI_TOKEN_ABI,
   GOVERNOR_ABI,
   ERC20_ABI,
-  PROPOSAL_IDS,
+  PROPOSAL_CREATED_EVENT,
 } from '../config/contracts'
-import { formatUnits, parseUnits, parseGwei } from 'viem'
+import { formatUnits, parseUnits, parseGwei, decodeEventLog } from 'viem'
 
 // Arbitrum Sepolia base fee is ~0.01–0.02 gwei; use 0.5 gwei as safe ceiling
 const GAS_FEES = {
@@ -39,7 +39,7 @@ export function Dashboard() {
   const { address } = useAccount()
 
   const { writeContract, data: hash, error: writeError, isPending, reset: resetWrite } = useWriteContract()
-  const { isLoading: isMining, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash })
+  const { isLoading: isMining, isSuccess: isTxSuccess, data: txReceipt } = useWaitForTransactionReceipt({ hash })
 
   // ── Lending reads ──────────────────────────────────────────────────────────
   const queryOpts = { enabled: !!address && !isWrongNetwork }
@@ -84,13 +84,38 @@ export function Dashboard() {
     functionName: 'balanceOf', args: address ? [address] : undefined, query: queryOpts,
   })
 
-  const { data: p1StateRaw, refetch: refetchP1 } = useReadContract({
-    address: CONTRACT_ADDRESSES.GOVERNOR, abi: GOVERNOR_ABI,
-    functionName: 'state', args: [PROPOSAL_IDS.PIP_01], query: { enabled: !isWrongNetwork },
+  // ── Proposals: fetch ProposalCreated events from chain ─────────────────────
+  const publicClient = usePublicClient()
+
+  const { data: proposalLogs, refetch: refetchLogs } = useQuery({
+    queryKey: ['proposalLogs'],
+    queryFn: async () => {
+      if (!publicClient) return []
+      const logs = await publicClient.getLogs({
+        address: CONTRACT_ADDRESSES.GOVERNOR,
+        event: PROPOSAL_CREATED_EVENT,
+        fromBlock: 0n,
+        toBlock: 'latest',
+      })
+      return logs.map(log => {
+        const { args } = decodeEventLog({ abi: [PROPOSAL_CREATED_EVENT], data: log.data, topics: log.topics })
+        return { id: (args as { proposalId: bigint; description: string }).proposalId, title: (args as { proposalId: bigint; description: string }).description }
+      })
+    },
+    enabled: !isWrongNetwork,
+    refetchInterval: 15000,
   })
-  const { data: p2StateRaw, refetch: refetchP2 } = useReadContract({
-    address: CONTRACT_ADDRESSES.GOVERNOR, abi: GOVERNOR_ABI,
-    functionName: 'state', args: [PROPOSAL_IDS.PIP_02], query: { enabled: !isWrongNetwork },
+
+  const onChainProposals = proposalLogs ?? []
+
+  const { data: proposalStates, refetch: refetchStates } = useReadContracts({
+    contracts: onChainProposals.map(p => ({
+      address: CONTRACT_ADDRESSES.GOVERNOR,
+      abi: GOVERNOR_ABI,
+      functionName: 'state' as const,
+      args: [p.id] as [bigint],
+    })),
+    query: { enabled: onChainProposals.length > 0 && !isWrongNetwork },
   })
 
   // ── AMM reads ──────────────────────────────────────────────────────────────
@@ -137,20 +162,22 @@ export function Dashboard() {
   const fmtBalA  = balanceA ? parseFloat(formatUnits(balanceA as bigint, 18)).toFixed(2) : '0.00'
   const fmtBalB  = balanceB ? parseFloat(formatUnits(balanceB as bigint, 18)).toFixed(2) : '0.00'
 
-  const proposals = [
-    { id: PROPOSAL_IDS.PIP_01, title: 'PIP-01: Increase LTV for ETH collateral to 80%',       state: p1StateRaw !== undefined ? PROPOSAL_STATES[Number(p1StateRaw)] : '...' },
-    { id: PROPOSAL_IDS.PIP_02, title: 'PIP-02: Integrate Chainlink oracle for Arbitrum Sepolia', state: p2StateRaw !== undefined ? PROPOSAL_STATES[Number(p2StateRaw)] : '...' },
-  ]
+  const proposals = onChainProposals.map((p, i) => ({
+    id: p.id,
+    title: p.title,
+    state: proposalStates?.[i]?.result !== undefined
+      ? PROPOSAL_STATES[Number(proposalStates[i].result)]
+      : '...',
+  }))
 
   // ── Local UI state ─────────────────────────────────────────────────────────
   const [depositAmt,   setDepositAmt]   = useState('100')
   const [borrowAmt,    setBorrowAmt]    = useState('50')
   const [repayAmt,     setRepayAmt]     = useState('50')
   const [withdrawAmt,  setWithdrawAmt]  = useState('100')
-  const [swapAmount,   setSwapAmount]   = useState('100')
-  const [proposalDesc, setProposalDesc] = useState('')
-  const [txLabel,    setTxLabel]    = useState('')
-
+  const [swapAmount,    setSwapAmount]    = useState('100')
+  const [proposalDesc,  setProposalDesc]  = useState('')
+  const [txLabel,       setTxLabel]       = useState('')
   // Refetch everything after successful tx
   useEffect(() => {
     if (isTxSuccess) {
@@ -158,7 +185,7 @@ export function Dashboard() {
       refetchUsdcBal(); refetchAllowance()
       refetchVP(); refetchReserves()
       refetchBalA(); refetchBalB(); refetchTknaAllowance()
-      refetchP1(); refetchP2()
+      refetchLogs(); refetchStates()
     }
   }, [isTxSuccess])
 

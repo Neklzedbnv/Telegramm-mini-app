@@ -147,6 +147,23 @@ export const DEFI_TOKEN_ABI = [
   },
 ] as const
 
+export const PROPOSAL_CREATED_EVENT = {
+  anonymous: false,
+  inputs: [
+    { indexed: false, name: 'proposalId',  type: 'uint256'   },
+    { indexed: false, name: 'proposer',    type: 'address'   },
+    { indexed: false, name: 'targets',     type: 'address[]' },
+    { indexed: false, name: 'values',      type: 'uint256[]' },
+    { indexed: false, name: 'signatures',  type: 'string[]'  },
+    { indexed: false, name: 'calldatas',   type: 'bytes[]'   },
+    { indexed: false, name: 'voteStart',   type: 'uint256'   },
+    { indexed: false, name: 'voteEnd',     type: 'uint256'   },
+    { indexed: false, name: 'description', type: 'string'    },
+  ],
+  name: 'ProposalCreated',
+  type: 'event',
+} as const
+
 export const GOVERNOR_ABI = [
   {
     inputs: [{ name: 'proposalId', type: 'uint256' }],
