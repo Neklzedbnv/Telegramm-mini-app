@@ -1,10 +1,10 @@
 # Test Coverage Report
 ## DeFi Super-App Protocol
 
-**Generated:** 2026-05-17  
+**Generated:** 2026-05-18  
 **Command:** `forge coverage --no-match-path "test/fork/*"`  
 **Toolchain:** Foundry stable, Solc 0.8.24  
-**Total tests:** 227 (unit + fuzz + invariant; fork tests excluded — require live RPC)
+**Total tests:** 276 (unit + fuzz + invariant; fork tests excluded — require live RPC)
 
 ---
 
@@ -12,15 +12,15 @@
 
 | Metric | Value |
 |---|---|
-| Total tests | 227 |
-| Tests passed | 227 |
+| Total tests | 276 |
+| Tests passed | 276 |
 | Tests failed | 0 |
-| Line coverage (contracts only) | **~90%** |
-| Statement coverage | ~89% |
-| Branch coverage | ~82% |
-| Function coverage | ~95% |
+| Line coverage (contracts only) | **~93%** |
+| Statement coverage | ~91% |
+| Branch coverage | ~83% |
+| Function coverage | ~96% |
 
-> Coverage is measured only over `contracts/` directory, excluding scripts, tests, and mocks.
+> Coverage is measured only over `contracts/` directory, excluding scripts and tests.
 
 ---
 
@@ -36,9 +36,9 @@
 | `contracts/governance/DeFiGovernor.sol` | 80.00% (16/20) | 78.95% (15/19) | 100.00% (0/0) | 80.00% (8/10) |
 | `contracts/oracle/OracleLib.sol` | 97.14% (34/35) | 94.87% (37/39) | 66.67% (4/6) | 100.00% (4/4) |
 | `contracts/oracle/ChainlinkOracleAdapter.sol` | 100.00% (7/7) | 100.00% (6/6) | 100.00% (1/1) | 100.00% (2/2) |
-| `contracts/tokens/PositionNFT.sol` | 0.00% (0/17) | 0.00% (0/15) | 0.00% (0/2) | 0.00% (0/4) |
+| `contracts/tokens/PositionNFT.sol` | 100.00% (17/17) | 100.00% (15/15) | 100.00% (2/2) | 100.00% (4/4) |
 | `contracts/attacks/AccessControlAttack.sol` | 78.95% (15/19) | 87.50% (14/16) | 60.00% (3/5) | 66.67% (4/6) |
-| `contracts/attacks/ReentrancyAttack.sol` | 0.00% (0/35) | 0.00% (0/36) | 0.00% (0/12) | 0.00% (0/7) |
+| `contracts/attacks/ReentrancyAttack.sol` | 100.00% (35/35) | 97.22% (35/36) | 58.33% (7/12) | 100.00% (7/7) |
 | `contracts/mocks/MockOracle.sol` | 100.00% (9/9) | 100.00% (6/6) | 100.00% (0/0) | 100.00% (3/3) |
 | `contracts/mocks/MockERC20.sol` | 75.00% (6/8) | 75.00% (3/4) | 100.00% (0/0) | 75.00% (3/4) |
 | `contracts/mocks/MockFlashLoanReceiver.sol` | 100.00% (11/11) | 100.00% (7/7) | 100.00% (1/1) | 100.00% (3/3) |
@@ -48,12 +48,6 @@
 
 ## Notes on Coverage
 
-### PositionNFT.sol — 0% (Expected)
-`PositionNFT` is deployed separately and wired to the LendingPool via `setPositionNFT()` after the pool's owner is transferred to the Timelock. In unit tests, `positionNFT` is left as `address(0)` for simplicity, so the NFT code path is never exercised. Coverage will be added in a dedicated `PositionNFT.t.sol` test file.
-
-### ReentrancyAttack.sol — 0% (Intentional)
-This file is an **educational demo** of a vulnerable contract (`VulnerableETHBank`) and its exploit (`ReentrancyAttacker`). It is explicitly excluded from the production protocol and not linked from any deployment script. Its purpose is to demonstrate the reentrancy vulnerability pattern in the audit report, not to be tested as protocol logic.
-
 ### DeFiGovernor.sol — 80%
 The uncovered lines are the `_cancel` override path (cancellation requires a specific caller role not exercised in current tests) and two overridden view functions that are only reachable via edge-case governance states. Core proposal lifecycle (propose → vote → queue → execute) is 100% covered.
 
@@ -61,7 +55,9 @@ The uncovered lines are the `_cancel` override path (cancellation requires a spe
 Uncovered branches are primarily:
 - `_accrueInterest` path for `_lastAccrual == 0` on first call (reachable but path is tested indirectly)
 - Some `revert` branches in `liquidate()` for collateral overflow edge cases
-- `setPositionNFT` emit path (NFT test coverage pending)
+
+### ReentrancyAttack.sol — Branch 58%
+Branch gaps are defensive conditions in the attacker's `receive()` fallback (e.g., `address(target).balance >= msg.value` when the bank is already empty). These branches represent edge cases where the attack naturally halts and do not affect protocol security.
 
 ---
 
@@ -78,11 +74,17 @@ Uncovered branches are primarily:
 | OracleLib | `test/unit/OracleLib.t.sol` | 21 | Unit |
 | Governor | `test/unit/Governor.t.sol` | 9 | Unit |
 | AccessControlAttack | `test/unit/AccessControlAttack.t.sol` | 5 | Unit |
-| VaultFuzz | `test/fuzz/VaultFuzz.t.sol` | 4 | Fuzz |
+| ReentrancyAttack | `test/unit/ReentrancyAttack.t.sol` | 5 | Unit |
+| PositionNFT | `test/unit/PositionNFT.t.sol` | 11 | Unit |
+| AMM | `test/unit/AMM.t.sol` | 26 | Unit |
+| GasBenchmark | `test/unit/GasBenchmark.t.sol` | 11 | Unit |
+| VaultFuzz | `test/fuzz/VaultFuzz.t.sol` | 11 | Fuzz |
+| AMMFuzz | `test/fuzz/AMMFuzz.t.sol` | 9 | Fuzz |
 | GovernorFuzz | `test/fuzz/GovernorFuzz.t.sol` | 4 | Fuzz |
 | VaultInvariant | `test/invariant/VaultInvariant.t.sol` | 5 | Invariant |
-| ForkTest | `test/fork/ForkTest.t.sol` | 3+ | Fork |
-| **Total** | | **227+** | |
+| AMMInvariant | `test/invariant/AMMInvariant.t.sol` | 3 | Invariant |
+| ForkTest | `test/fork/ForkTest.t.sol` | 4 | Fork |
+| **Total** | | **296** | |
 
 ---
 

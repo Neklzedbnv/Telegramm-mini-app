@@ -380,23 +380,23 @@ Frontend (TMA)
 
 ## Deployed Contracts — Arbitrum Sepolia (Chain ID: 421614)
 
-> Last deployment: 2026-05-18. All contracts verified on [Arbiscan Sepolia](https://sepolia.arbiscan.io).
+> Last deployment: 2026-05-18. All contracts verified on [Arbiscan Sepolia](https://sepolia.arbiscan.io) and [Blockscout](https://arbitrum-sepolia.blockscout.com).
 
 | Contract | Address | Verified |
 |---|---|---|
-| MockOracle | [`0x7Ac65596A6086748f1ac6302c4DCbB9Ce7247D83`](https://sepolia.arbiscan.io/address/0x7Ac65596A6086748f1ac6302c4DCbB9Ce7247D83) | ✅ |
-| LendingPoolV1 (impl) | [`0x59319c0B2eB54ED0183516f263c3E3F9E413E648`](https://sepolia.arbiscan.io/address/0x59319c0B2eB54ED0183516f263c3E3F9E413E648) | ✅ |
-| LendingPool (proxy) | [`0xC047D3248eE6F4D5ba570d8cD8D904C2D3a0A9F9`](https://sepolia.arbiscan.io/address/0xC047D3248eE6F4D5ba570d8cD8D904C2D3a0A9F9) | ✅ |
-| PoolFactory | [`0xb1bd9D872Ec5d383151ae5a992E8D06e152768CB`](https://sepolia.arbiscan.io/address/0xb1bd9D872Ec5d383151ae5a992E8D06e152768CB) | ⚠️ bytecode mismatch |
-| DeFiToken (DGT) | [`0x3516c36c76D19Cb3fBc81B5EfFdbD11aa89BaDF4`](https://sepolia.arbiscan.io/address/0x3516c36c76D19Cb3fBc81B5EfFdbD11aa89BaDF4) | ✅ |
-| DeFiTimelock | [`0x8Ae65c04cEc1040b74ed8C425a2D79e59F5B08Dd`](https://sepolia.arbiscan.io/address/0x8Ae65c04cEc1040b74ed8C425a2D79e59F5B08Dd) | ✅ |
-| DeFiGovernor | [`0xA2F72eB781dCD791F95E4c0E4bb26DCF11a94a6C`](https://sepolia.arbiscan.io/address/0xA2F72eB781dCD791F95E4c0E4bb26DCF11a94a6C) | ✅ |
-| PositionNFT | [`0x4b2D9aD34aC1Aa815A848c04c2fbE4DeeAD11205`](https://sepolia.arbiscan.io/address/0x4b2D9aD34aC1Aa815A848c04c2fbE4DeeAD11205) | ✅ |
-| MockUSDC | [`0xD82cdA9de4a95B12913FCf935E3c5fFbD0B47D9C`](https://sepolia.arbiscan.io/address/0xD82cdA9de4a95B12913FCf935E3c5fFbD0B47D9C) | ✅ |
-| YieldVault | [`0x02813993c472E60853cE7fb990c481fbA80dA358`](https://sepolia.arbiscan.io/address/0x02813993c472E60853cE7fb990c481fbA80dA358) | ✅ |
-| AMM TokenA (TKNA) | [`0x0Ca55915D0308D968EeEa4BEa57B6E507B7a086D`](https://sepolia.arbiscan.io/address/0x0Ca55915D0308D968EeEa4BEa57B6E507B7a086D) | ✅ |
-| AMM TokenB (TKNB) | [`0x840e571542CEd2C79Cac03c6aaFe6d3EC3494985`](https://sepolia.arbiscan.io/address/0x840e571542CEd2C79Cac03c6aaFe6d3EC3494985) | ✅ |
-| AMM | [`0xaE4b7dcF92c69E85B2B203Ac2054D6Bb67533b5B`](https://sepolia.arbiscan.io/address/0xaE4b7dcF92c69E85B2B203Ac2054D6Bb67533b5B) | ✅ |
+| MockOracle | [`0x7Ac65596A6086748f1ac6302c4DCbB9Ce7247D83`](https://sepolia.arbiscan.io/address/0x7Ac65596A6086748f1ac6302c4DCbB9Ce7247D83) | ✅ Arbiscan |
+| LendingPoolV1 (impl) | [`0x59319c0B2eB54ED0183516f263c3E3F9E413E648`](https://sepolia.arbiscan.io/address/0x59319c0B2eB54ED0183516f263c3E3F9E413E648) | ✅ Arbiscan |
+| LendingPool (proxy) | [`0xC047D3248eE6F4D5ba570d8cD8D904C2D3a0A9F9`](https://sepolia.arbiscan.io/address/0xC047D3248eE6F4D5ba570d8cD8D904C2D3a0A9F9) | ✅ Arbiscan |
+| PoolFactory | [`0x7B48d7929cA78D6Ad915f972be3936923cD4Fc67`](https://arbitrum-sepolia.blockscout.com/address/0x7B48d7929cA78D6Ad915f972be3936923cD4Fc67) | ✅ Blockscout |
+| DeFiToken (DGT) | [`0x3516c36c76D19Cb3fBc81B5EfFdbD11aa89BaDF4`](https://sepolia.arbiscan.io/address/0x3516c36c76D19Cb3fBc81B5EfFdbD11aa89BaDF4) | ✅ Arbiscan |
+| DeFiTimelock | [`0x8Ae65c04cEc1040b74ed8C425a2D79e59F5B08Dd`](https://sepolia.arbiscan.io/address/0x8Ae65c04cEc1040b74ed8C425a2D79e59F5B08Dd) | ✅ Arbiscan |
+| DeFiGovernor | [`0xA2F72eB781dCD791F95E4c0E4bb26DCF11a94a6C`](https://sepolia.arbiscan.io/address/0xA2F72eB781dCD791F95E4c0E4bb26DCF11a94a6C) | ✅ Arbiscan |
+| PositionNFT | [`0x4b2D9aD34aC1Aa815A848c04c2fbE4DeeAD11205`](https://sepolia.arbiscan.io/address/0x4b2D9aD34aC1Aa815A848c04c2fbE4DeeAD11205) | ✅ Arbiscan |
+| MockUSDC | [`0xD82cdA9de4a95B12913FCf935E3c5fFbD0B47D9C`](https://sepolia.arbiscan.io/address/0xD82cdA9de4a95B12913FCf935E3c5fFbD0B47D9C) | ✅ Arbiscan |
+| YieldVault | [`0x02813993c472E60853cE7fb990c481fbA80dA358`](https://sepolia.arbiscan.io/address/0x02813993c472E60853cE7fb990c481fbA80dA358) | ✅ Arbiscan |
+| AMM TokenA (TKNA) | [`0x0Ca55915D0308D968EeEa4BEa57B6E507B7a086D`](https://sepolia.arbiscan.io/address/0x0Ca55915D0308D968EeEa4BEa57B6E507B7a086D) | ✅ Arbiscan |
+| AMM TokenB (TKNB) | [`0x840e571542CEd2C79Cac03c6aaFe6d3EC3494985`](https://sepolia.arbiscan.io/address/0x840e571542CEd2C79Cac03c6aaFe6d3EC3494985) | ✅ Arbiscan |
+| AMM | [`0xaE4b7dcF92c69E85B2B203Ac2054D6Bb67533b5B`](https://sepolia.arbiscan.io/address/0xaE4b7dcF92c69E85B2B203Ac2054D6Bb67533b5B) | ✅ Arbiscan |
 
 ---
 
